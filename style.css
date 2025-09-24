@@ -1,22 +1,23 @@
 /* Dangan Trial - Toggle UI styles */
 
 /* Toggle button near chat input */
+/* Floating toggle button */
 #dangan-toggle-btn {
   position: fixed;
-  bottom: 72px;  /* just above the chat bar on mobile */
+  bottom: 72px;          /* sits above chat input on mobile */
   right: 12px;
   z-index: 99999;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: linear-gradient(180deg,#ffec7a,#ffd14a);
-  color: #000;
-  font-weight: bold;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  padding: 6px 10px;
   font-size: 14px;
+  background: #ffd14a;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
+/* Floating panel */
 #dangan-panel {
   position: fixed;
   z-index: 99998;
@@ -26,7 +27,8 @@
   padding: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   display: none;
-  max-width: 95vw;  /* make sure it fits on mobile */
+  max-width: 95vw;       /* mobile-friendly width */
+  box-sizing: border-box;
 }
 
 /* panel header row */
