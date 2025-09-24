@@ -1,4 +1,4 @@
-// Dangan Trial (Wand Menu Integration via registerAction) - SillyTavern extension (index.js)
+// Dangan Trial (Manual Wand Menu Patch) - SillyTavern extension (index.js)
 (async () => {
   // Wait for SillyTavern context
   function waitForST() {
@@ -22,7 +22,6 @@
     saveSettingsDebounced,
     chatMetadata,
     saveMetadata,
-    registerAction,
   } = ctx;
 
   const MODULE_KEY = "dangan_trial_toggle";
@@ -189,7 +188,7 @@
           }
           s.bullets[idx].used = true;
           saveSettingsDebounced();
-          const cont = document.querySelector(".dangan-modal");
+          const cont = document.querySelector("#dangan-panel-container");
           if (cont) renderPanelContents(cont);
 
           const md = SillyTavern.getContext().chatMetadata;
@@ -222,25 +221,23 @@
     window.addEventListener("mousedown", off);
   }
 
-  // Build modal for wand action
-  function showModal() {
-    const modal = document.createElement("div");
-    modal.className = "dangan-modal";
-    modal.style.position = "fixed";
-    modal.style.top = "50%";
-    modal.style.left = "50%";
-    modal.style.transform = "translate(-50%, -50%)";
-    modal.style.background = "#fffbe8";
-    modal.style.border = "2px solid #ffd14a";
-    modal.style.borderRadius = "10px";
-    modal.style.padding = "12px";
-    modal.style.zIndex = "100000";
-    modal.style.maxWidth = "95vw";
-    modal.style.maxHeight = "80vh";
-    modal.style.overflowY = "auto";
-    modal.style.boxShadow = "0 4px 12px rgba(0,0,0,0.4)";
+  // Add button to wand sidebar manually
+  function patchWandMenu() {
+    const sidebar = document.querySelector("#actionmenu .actionmenu-sidebar");
+    const content = document.querySelector("#actionmenu .actionmenu-content");
+    if (!sidebar || !content) return console.warn("[Dangan Trial] Wand menu not found");
 
-    modal.innerHTML = `
+    // Button
+    const btn = document.createElement("div");
+    btn.className = "actionmenu-button";
+    btn.textContent = "💥 Truth Bullets";
+    sidebar.appendChild(btn);
+
+    // Content container
+    const panel = document.createElement("div");
+    panel.id = "dangan-panel-container";
+    panel.style.display = "none";
+    panel.innerHTML = `
       <div class="d-header">
         <h4>Dangan Trial — Truth Bullets</h4>
       </div>
@@ -250,30 +247,19 @@
         <button id="dangan-add-btn">Add</button>
       </div>
     `;
+    content.appendChild(panel);
 
-    renderPanelContents(modal);
-
-    const closeBtn = document.createElement("button");
-    closeBtn.textContent = "Close";
-    closeBtn.style.marginTop = "8px";
-    closeBtn.onclick = () => modal.remove();
-    modal.appendChild(closeBtn);
-
-    document.body.appendChild(modal);
+    btn.addEventListener("click", () => {
+      // hide other panels
+      content.querySelectorAll("div").forEach((el) => (el.style.display = "none"));
+      panel.style.display = "block";
+      renderPanelContents(panel);
+    });
   }
 
-  // Wire listeners + register wand action
+  // Wire listeners + init
   function setupExtension() {
-    if (registerAction) {
-      registerAction({
-        id: "dangan-truth-bullets",
-        name: "Truth Bullets",
-        icon: "💥",
-        action: showModal,
-      });
-    } else {
-      console.warn("[Dangan Trial] registerAction not available in this build.");
-    }
+    patchWandMenu();
 
     // initial pass over existing messages
     document
@@ -335,7 +321,7 @@
   setTimeout(() => {
     ensureSettings();
     setupExtension();
-  }, 300);
+  }, 500);
 
-  console.log("[Dangan Trial] Wand Menu (registerAction) integration loaded");
+  console.log("[Dangan Trial] Wand Menu manual patch loaded");
 })();
