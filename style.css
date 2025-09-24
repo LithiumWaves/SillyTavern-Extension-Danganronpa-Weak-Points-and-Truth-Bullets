@@ -1,18 +1,78 @@
-/* basic styling for the Truth Bullets panel and buttons */
-.dangan-panel {
-  background: linear-gradient(180deg, #0f1113, #0a0b0c);
-  border: 1px solid #222;
-  color: #ddd;
-  padding: 8px;
-  margin: 6px;
-  border-radius: 6px;
-  font-family: inherit;
-  max-width: 320px;
+/* === Truth Bullet Extension UI === */
+#truth-bullet-ui {
+  position: fixed;             /* overlay, never displaces core UI */
+  bottom: 12px;                /* pinned near bottom */
+  right: 12px;                 /* tucked into right corner */
+  background: rgba(20, 20, 20, 0.95);
+  color: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  z-index: 9999;               /* ensure it's always on top */
+  font-family: sans-serif;
+  max-width: 90vw;             /* responsive for mobile */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
 }
 
-.dangan-panel h3 { color: #ffeb7a; margin: 4px 0; font-size: 14px; }
-.dangan-bullet-btn { background:#8ef0ff;color:#000;border:1px solid #76d6dd;border-radius:6px;padding:4px 8px;margin:4px 4px 4px 0;cursor:pointer; }
-.dangan-bullet-btn[disabled] { opacity:0.45; cursor:default; }
-.dangan-weak-btn { background:#ffeb7a;color:#000;border:1px solid #c9b96b;border-radius:6px;padding:4px 8px;margin:4px 0;cursor:pointer; }
-.dangan-weak-menu { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-.dangan-selected { color:#01b1c9; font-weight:600; margin-top:8px; }
+/* Title */
+#truth-bullet-ui h3 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  color: #ffeb7a;
+  text-align: center;
+}
+
+/* Bullet list */
+#truth-bullet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 150px;           /* scrollable inventory */
+  overflow-y: auto;
+}
+
+/* Bullet buttons */
+#truth-bullet-list button {
+  display: block;
+  width: 100%;
+  margin: 3px 0;
+  padding: 6px;
+  background: #8ef0ff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Used bullets look dimmed */
+#truth-bullet-list button.used {
+  background: #666;
+  color: #ccc;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+/* Add bar */
+#truth-bullet-input {
+  width: 70%;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #222;
+  color: #fff;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+#truth-bullet-add {
+  width: 25%;
+  padding: 4px;
+  border-radius: 6px;
+  margin-left: 4px;
+  background: #ffeb7a;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
