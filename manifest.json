@@ -1,0 +1,8 @@
+{
+  "name": "Dangan Trial",
+  "version": "0.1",
+  "author": "LithiumWaves",
+  "description": "Adds clickable Weak Points and a persistent Truth Bullet inventory for Class Trials.",
+  "entry": "dangan-trial.js",
+  "type": "ui"
+}
