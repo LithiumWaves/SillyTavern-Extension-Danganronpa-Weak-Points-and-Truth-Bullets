@@ -1,8 +1,12 @@
 {
-  "name": "Dangan Trial",
-  "version": "0.1",
+  "display_name": "Dangan Trial",
+  "loading_order": 50,
+  "js": "index.js",
+  "css": "style.css",
   "author": "LithiumWaves",
-  "description": "Adds clickable Weak Points and a persistent Truth Bullet inventory for Class Trials.",
-  "entry": "dangan-trial.js",
-  "type": "ui"
+  "version": "0.2.0",
+  "homePage": "https://github.com/LithiumWaves/SillyTavern-Extension-Danganronpa-Weak-Points-and-Truth-Bullets",
+  "auto_update": false,
+  "minimum_client_version": "1.0.0",
+  "i18n": {}
 }
