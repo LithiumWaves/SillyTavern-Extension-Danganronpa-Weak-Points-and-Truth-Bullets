@@ -221,23 +221,58 @@
     window.addEventListener("mousedown", off);
   }
 
-  // Add button to wand sidebar manually
+  // Add entry into the real wand dropdown
   function patchWandMenu() {
-    const sidebar = document.querySelector("#actionmenu .actionmenu-sidebar");
-    const content = document.querySelector("#actionmenu .actionmenu-content");
-    if (!sidebar || !content) return console.warn("[Dangan Trial] Wand menu not found");
+    const menu = document.querySelector("#extensionsMenu");
+    if (!menu) {
+      console.warn("[Dangan Trial] Wand menu not found, retrying...");
+      setTimeout(patchWandMenu, 1000);
+      return;
+    }
 
-    // Button
+    if (document.getElementById("dangan_wand_container")) return;
+
+    const container = document.createElement("div");
+    container.id = "dangan_wand_container";
+    container.className = "extension_container interactable";
+    container.tabIndex = 0;
+
     const btn = document.createElement("div");
-    btn.className = "actionmenu-button";
-    btn.textContent = "💥 Truth Bullets";
-    sidebar.appendChild(btn);
+    btn.id = "dangan_wand_btn";
+    btn.className = "list-group-item flex-container flexGap5 interactable";
+    btn.title = "Manage Truth Bullets";
+    btn.innerHTML = `<span style="font-size:1.2em">💥</span> Truth Bullets`;
 
-    // Content container
-    const panel = document.createElement("div");
-    panel.id = "dangan-panel-container";
-    panel.style.display = "none";
-    panel.innerHTML = `
+    btn.addEventListener("click", () => {
+      showModal();
+    });
+
+    container.appendChild(btn);
+    menu.appendChild(container);
+
+    console.log("[Dangan Trial] Wand button injected");
+  }
+
+  function showModal() {
+    document.querySelectorAll(".dangan-modal").forEach(m => m.remove());
+
+    const modal = document.createElement("div");
+    modal.className = "dangan-modal";
+    modal.style.position = "fixed";
+    modal.style.top = "50%";
+    modal.style.left = "50%";
+    modal.style.transform = "translate(-50%, -50%)";
+    modal.style.background = "#fffbe8";
+    modal.style.border = "2px solid #ffd14a";
+    modal.style.borderRadius = "10px";
+    modal.style.padding = "12px";
+    modal.style.zIndex = "100000";
+    modal.style.maxWidth = "95vw";
+    modal.style.maxHeight = "80vh";
+    modal.style.overflowY = "auto";
+    modal.style.boxShadow = "0 4px 12px rgba(0,0,0,0.4)";
+
+    modal.innerHTML = `
       <div class="d-header">
         <h4>Dangan Trial — Truth Bullets</h4>
       </div>
@@ -247,26 +282,26 @@
         <button id="dangan-add-btn">Add</button>
       </div>
     `;
-    content.appendChild(panel);
 
-    btn.addEventListener("click", () => {
-      // hide other panels
-      content.querySelectorAll("div").forEach((el) => (el.style.display = "none"));
-      panel.style.display = "block";
-      renderPanelContents(panel);
-    });
+    renderPanelContents(modal);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "Close";
+    closeBtn.style.marginTop = "8px";
+    closeBtn.onclick = () => modal.remove();
+    modal.appendChild(closeBtn);
+
+    document.body.appendChild(modal);
   }
 
   // Wire listeners + init
   function setupExtension() {
     patchWandMenu();
 
-    // initial pass over existing messages
     document
       .querySelectorAll(".mes_text, .message .text, .character-message .mes_text")
       .forEach(processRenderedMessageElement);
 
-    // observe new messages
     const chatRoot = document.querySelector("#chat") || document.body;
     const mo = new MutationObserver((mutations) => {
       for (const m of mutations) {
@@ -286,14 +321,12 @@
     });
     mo.observe(chatRoot, { childList: true, subtree: true });
 
-    // weakpoint click delegation
     document.addEventListener("click", (ev) => {
       if (ev.target && ev.target.matches && ev.target.matches(".dangan-weak-btn")) {
         handleWeakClick(ev);
       }
     });
 
-    // When user sends a message, check for typed "I use Truth Bullet:"
     eventSource.on(event_types.MESSAGE_SENT, (payload) => {
       try {
         const msg = payload?.message || (payload && payload.content) || "";
