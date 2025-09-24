@@ -1,11 +1,11 @@
 {
-  "display_name": "Dangan Trial",
+  "display_name": "Dangan Trial (Toggle UI)",
   "loading_order": 50,
   "js": "index.js",
   "css": "style.css",
   "author": "LithiumWaves",
-  "version": "0.2.0",
-  "homePage": "https://github.com/LithiumWaves/SillyTavern-Extension-Danganronpa-Weak-Points-and-Truth-Bullets",
+  "version": "0.3.0",
+  "homePage": "",
   "auto_update": false,
   "minimum_client_version": "1.0.0",
   "i18n": {}
