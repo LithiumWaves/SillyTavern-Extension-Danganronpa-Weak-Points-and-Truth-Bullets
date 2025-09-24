@@ -131,15 +131,18 @@
 
     // Toggle logic
     toggleBtn.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      const panelEl = document.getElementById("dangan-panel");
-      panelEl.style.display = panelEl.style.display === "block" ? "none" : "block";
-      // position when opening
-      if (panelEl.style.display === "block") {
-        positionPanel();
-      }
-    });
-
+  ev.stopPropagation();
+  const panelEl = document.getElementById("dangan-panel");
+  const isOpen = panelEl.style.display === "block";
+  if (isOpen) {
+    panelEl.style.display = "none";
+  } else {
+    panelEl.style.display = "block";
+    // Force a reflow so offsetHeight is valid
+    void panelEl.offsetHeight;
+    positionPanel();
+  }
+});
     // Close button
     panel.querySelector("#dangan-close").addEventListener("click", () => {
       document.getElementById("dangan-panel").style.display = "none";
