@@ -1,78 +1,107 @@
-/* === Truth Bullet Extension UI === */
-#truth-bullet-ui {
-  position: fixed;             /* overlay, never displaces core UI */
-  bottom: 12px;                /* pinned near bottom */
-  right: 12px;                 /* tucked into right corner */
-  background: rgba(20, 20, 20, 0.95);
-  color: #fff;
-  padding: 10px;
-  border-radius: 10px;
-  z-index: 9999;               /* ensure it's always on top */
-  font-family: sans-serif;
-  max-width: 90vw;             /* responsive for mobile */
-  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
-}
+/* Dangan Trial - Toggle UI styles */
 
-/* Title */
-#truth-bullet-ui h3 {
-  margin: 0 0 6px 0;
-  font-size: 16px;
-  color: #ffeb7a;
-  text-align: center;
-}
-
-/* Bullet list */
-#truth-bullet-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 150px;           /* scrollable inventory */
-  overflow-y: auto;
-}
-
-/* Bullet buttons */
-#truth-bullet-list button {
-  display: block;
-  width: 100%;
-  margin: 3px 0;
-  padding: 6px;
-  background: #8ef0ff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
+/* Toggle button near chat input */
+#dangan-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: linear-gradient(180deg,#ffec7a,#ffd14a);
   color: #000;
-  font-weight: bold;
-  cursor: pointer;
-  text-align: left;
-}
-
-/* Used bullets look dimmed */
-#truth-bullet-list button.used {
-  background: #666;
-  color: #ccc;
-  text-decoration: line-through;
-  cursor: not-allowed;
-}
-
-/* Add bar */
-#truth-bullet-input {
-  width: 70%;
-  padding: 4px;
-  border-radius: 6px;
-  border: 1px solid #555;
-  background: #222;
-  color: #fff;
-  margin-top: 6px;
-  font-size: 14px;
-}
-
-#truth-bullet-add {
-  width: 25%;
-  padding: 4px;
-  border-radius: 6px;
-  margin-left: 4px;
-  background: #ffeb7a;
+  font-weight: 700;
   border: none;
-  font-weight: bold;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  font-size: 13px;
+}
+
+/* Panel container (absolute overlay placed above chat input) */
+#dangan-panel {
+  position: absolute; /* positioned relative to chat container */
+  bottom: 56px; /* offset above send area */
+  left: 8px;
+  right: 8px;
+  max-width: calc(100% - 16px);
+  background: rgba(14,14,14,0.96);
+  color: #ddd;
+  border-radius: 10px;
+  border: 1px solid #333;
+  padding: 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  z-index: 99999;
+  display: none; /* hidden by default */
+  font-size: 13px;
+}
+
+/* panel header row */
+#dangan-panel .d-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+#dangan-panel .d-header h4 { margin:0; color:#ffeb7a; font-size:14px; }
+
+/* bullet list */
+#dangan-bullet-list {
+  display:block;
+  max-height: 160px;
+  overflow-y: auto;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+
+/* bullet button style */
+.dangan-bullet-btn {
+  display:block;
+  width:100%;
+  margin:6px 0;
+  padding:8px;
+  background:#8ef0ff;
+  color:#000;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  text-align:left;
+  font-weight:600;
+}
+
+/* used bullet */
+.dangan-bullet-btn.used {
+  background:#444;
+  color:#aaa;
+  text-decoration:line-through;
+  cursor:default;
+}
+
+/* small utilities */
+#dangan-add-row { display:flex; gap:6px; margin-top:8px; }
+#dangan-add-row input { flex:1; padding:6px; border-radius:6px; border:1px solid #333; background:#111; color:#fff; }
+#dangan-add-row button { padding:6px 8px; border-radius:6px; background:#ffeb7a; border:none; font-weight:700; cursor:pointer; }
+
+/* floating weakpoint menu (when clicking a Weak Point in chat) */
+.dangan-weak-menu-floating {
+  position: fixed;
+  z-index: 100000;
+  min-width: 220px;
+  max-width: 90vw;
+  background: #0b0b0b;
+  border: 1px solid #222;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+}
+
+/* weakpoint button inserted into chat */
+.dangan-weak-btn {
+  background: #ffeb7a;
+  color: #000;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 4px 0;
+  border: none;
+  cursor: pointer;
+  font-weight:700;
 }
