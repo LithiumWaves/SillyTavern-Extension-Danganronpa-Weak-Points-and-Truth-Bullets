@@ -1,4 +1,4 @@
-// Dangan Trial (Wand Menu Integration) - SillyTavern extension (index.js)
+// Dangan Trial (Wand Menu Integration via registerAction) - SillyTavern extension (index.js)
 (async () => {
   // Wait for SillyTavern context
   function waitForST() {
@@ -22,7 +22,7 @@
     saveSettingsDebounced,
     chatMetadata,
     saveMetadata,
-    registerActionPage,
+    registerAction,
   } = ctx;
 
   const MODULE_KEY = "dangan_trial_toggle";
@@ -189,7 +189,8 @@
           }
           s.bullets[idx].used = true;
           saveSettingsDebounced();
-          renderPanelContents(document.querySelector("#dangan-panel-container"));
+          const cont = document.querySelector(".dangan-modal");
+          if (cont) renderPanelContents(cont);
 
           const md = SillyTavern.getContext().chatMetadata;
           md["dangan_last_target"] = {
@@ -221,28 +222,58 @@
     window.addEventListener("mousedown", off);
   }
 
-  // Wire listeners + register wand tab
+  // Build modal for wand action
+  function showModal() {
+    const modal = document.createElement("div");
+    modal.className = "dangan-modal";
+    modal.style.position = "fixed";
+    modal.style.top = "50%";
+    modal.style.left = "50%";
+    modal.style.transform = "translate(-50%, -50%)";
+    modal.style.background = "#fffbe8";
+    modal.style.border = "2px solid #ffd14a";
+    modal.style.borderRadius = "10px";
+    modal.style.padding = "12px";
+    modal.style.zIndex = "100000";
+    modal.style.maxWidth = "95vw";
+    modal.style.maxHeight = "80vh";
+    modal.style.overflowY = "auto";
+    modal.style.boxShadow = "0 4px 12px rgba(0,0,0,0.4)";
+
+    modal.innerHTML = `
+      <div class="d-header">
+        <h4>Dangan Trial — Truth Bullets</h4>
+      </div>
+      <div id="dangan-bullet-list"></div>
+      <div id="dangan-add-row">
+        <input id="dangan-add-input" placeholder="New bullet name..." />
+        <button id="dangan-add-btn">Add</button>
+      </div>
+    `;
+
+    renderPanelContents(modal);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "Close";
+    closeBtn.style.marginTop = "8px";
+    closeBtn.onclick = () => modal.remove();
+    modal.appendChild(closeBtn);
+
+    document.body.appendChild(modal);
+  }
+
+  // Wire listeners + register wand action
   function setupExtension() {
-    // Register a scrollable page in the wand menu
-    registerActionPage({
-      id: "dangan-truth-bullets",
-      name: "Truth Bullets",
-      icon: "💥",
-      render: (container) => {
-        container.innerHTML = `
-          <div class="d-header">
-            <h4>Dangan Trial — Truth Bullets</h4>
-          </div>
-          <div id="dangan-bullet-list"></div>
-          <div id="dangan-add-row">
-            <input id="dangan-add-input" placeholder="New bullet name..." />
-            <button id="dangan-add-btn">Add</button>
-          </div>
-        `;
-        container.id = "dangan-panel-container";
-        renderPanelContents(container);
-      },
-    });
+    if (registerAction) {
+      registerAction({
+        id: "dangan-truth-bullets",
+        name: "Truth Bullets",
+        icon: "💥",
+        action: showModal,
+      });
+    } else {
+      console.warn("[Dangan Trial] registerAction not available in this build.");
+    }
 
     // initial pass over existing messages
     document
@@ -290,7 +321,6 @@
           if (idx >= 0) {
             s.bullets[idx].used = true;
             saveSettingsDebounced();
-            renderPanelContents(document.querySelector("#dangan-panel-container"));
           }
           const md = SillyTavern.getContext().chatMetadata;
           md["dangan_last_fired"] = { bullet: name, time: Date.now() };
@@ -307,5 +337,5 @@
     setupExtension();
   }, 300);
 
-  console.log("[Dangan Trial] Wand Menu integration loaded");
+  console.log("[Dangan Trial] Wand Menu (registerAction) integration loaded");
 })();
