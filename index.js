@@ -109,7 +109,7 @@
         const rect = sendArea.getBoundingClientRect();
         // place above the send area; respect viewport
         const panelEl = document.getElementById("dangan-panel");
-        const panelWidth = Math.min(window.innerWidth - 16, 520);
+        const panelWidth = Math.min(window.innerWidth - 16, 320); // narrower on mobile
         panelEl.style.width = Math.min(rect.width - 8 || panelWidth, panelWidth) + "px";
         // prefer bottom: set absolute top
         let top = rect.top - panelEl.offsetHeight - 8;
