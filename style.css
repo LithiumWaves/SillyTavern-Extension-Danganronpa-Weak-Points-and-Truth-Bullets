@@ -1,0 +1,18 @@
+/* basic styling for the Truth Bullets panel and buttons */
+.dangan-panel {
+  background: linear-gradient(180deg, #0f1113, #0a0b0c);
+  border: 1px solid #222;
+  color: #ddd;
+  padding: 8px;
+  margin: 6px;
+  border-radius: 6px;
+  font-family: inherit;
+  max-width: 320px;
+}
+
+.dangan-panel h3 { color: #ffeb7a; margin: 4px 0; font-size: 14px; }
+.dangan-bullet-btn { background:#8ef0ff;color:#000;border:1px solid #76d6dd;border-radius:6px;padding:4px 8px;margin:4px 4px 4px 0;cursor:pointer; }
+.dangan-bullet-btn[disabled] { opacity:0.45; cursor:default; }
+.dangan-weak-btn { background:#ffeb7a;color:#000;border:1px solid #c9b96b;border-radius:6px;padding:4px 8px;margin:4px 0;cursor:pointer; }
+.dangan-weak-menu { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.dangan-selected { color:#01b1c9; font-weight:600; margin-top:8px; }
