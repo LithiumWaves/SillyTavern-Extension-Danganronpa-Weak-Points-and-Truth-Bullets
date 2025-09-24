@@ -96,6 +96,7 @@
     const addBtn = container.querySelector("#dangan-add-btn");
     const addInput = container.querySelector("#dangan-add-input");
     if (addBtn && addInput) {
+      // prevent wand collapse when interacting
       addBtn.addEventListener("click", (ev) => ev.stopPropagation());
       addInput.addEventListener("click", (ev) => ev.stopPropagation());
       addInput.addEventListener("keydown", (ev) => ev.stopPropagation());
@@ -204,7 +205,7 @@
     window.addEventListener("mousedown", off);
   }
 
-  // 🔥 NEW: place creme panel beside wand instead of underneath
+  // NEW: floating panel placed next to wand entry (appended to body)
   function patchWandMenu() {
     const menu = document.querySelector("#extensionsMenu");
     if (!menu) {
@@ -214,35 +215,39 @@
     }
     if (document.getElementById("dangan_wand_container")) return;
 
+    // create wand entry inside menu (so it appears with other items)
     const container = document.createElement("div");
     container.id = "dangan_wand_container";
     container.className = "extension_container interactable";
     container.tabIndex = 0;
 
     const entry = document.createElement("div");
+    entry.id = "dangan_wand_btn";
     entry.className = "list-group-item flex-container flexGap5 interactable";
     entry.title = "Manage Truth Bullets";
     entry.innerHTML = `<span style="font-size:1.2em">💥</span> Truth Bullets`;
-    container.appendChild(entry);
 
+    container.appendChild(entry);
+    menu.appendChild(container);
+
+    // create floating panel appended to body (not inside menu) so it's never clipped
+    if (document.getElementById("dangan-panel-container")) {
+      // if already present, reuse
+      return;
+    }
     const panel = document.createElement("div");
     panel.id = "dangan-panel-container";
-    panel.className = "extension_tab_content";
     panel.style.display = "none";
-
-    // 🔑 position panel to the right of the wand
-    panel.style.position = "absolute";
-    panel.style.top = "0";
-    panel.style.left = "100%";
-    panel.style.marginLeft = "8px";
-    panel.style.width = "260px";
+    panel.style.position = "fixed";
     panel.style.background = "#fffbe8";
     panel.style.border = "2px solid #ffd14a";
     panel.style.borderRadius = "6px";
     panel.style.padding = "8px";
-    panel.style.maxHeight = "60vh";
+    panel.style.maxHeight = "70vh";
     panel.style.overflowY = "auto";
-    panel.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+    panel.style.boxShadow = "0 6px 18px rgba(0,0,0,0.25)";
+    panel.style.zIndex = "100000";
+    panel.style.width = "260px";
 
     panel.innerHTML = `
       <div class="d-header">
@@ -255,22 +260,82 @@
       </div>
     `;
 
-    panel.addEventListener("click", (ev) => ev.stopPropagation());
+    // prevent clicks inside from closing (we'll close on outside clicks)
+    panel.addEventListener("click", (e) => e.stopPropagation());
+
+    document.body.appendChild(panel);
+
+    // toggling & positioning
+    function showHidePanel() {
+      const visible = panel.style.display === "block";
+      if (visible) {
+        panel.style.display = "none";
+        return;
+      }
+      // render contents then position
+      renderPanelContents(panel);
+      panel.style.visibility = "hidden";
+      panel.style.display = "block";
+
+      // ensure width is set (already 260px) — compute position based on entry rect
+      requestAnimationFrame(() => {
+        const rect = entry.getBoundingClientRect();
+        const pad = 8;
+        const pw = Math.min(panel.offsetWidth || 260, Math.min(window.innerWidth - 16, 320));
+        panel.style.width = pw + "px";
+
+        // prefer right
+        let left = rect.right + pad;
+        if (left + pw > window.innerWidth - 8) {
+          // not enough space on right -> place to the left of entry
+          left = rect.left - pw - pad;
+        }
+        // clamp into viewport
+        left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+
+        // top: try align top of entry, but clamp to viewport
+        let top = rect.top;
+        if (top + panel.offsetHeight > window.innerHeight - 8) {
+          top = Math.max(8, window.innerHeight - panel.offsetHeight - 8);
+        }
+        top = Math.max(8, top);
+
+        panel.style.left = Math.round(left) + "px";
+        panel.style.top = Math.round(top) + "px";
+        panel.style.visibility = "visible";
+      });
+    }
 
     entry.addEventListener("click", (ev) => {
       ev.stopPropagation();
-      const visible = panel.style.display === "block";
-      document.querySelectorAll("#extensionsMenu .extension_tab_content").forEach((el) => {
-        el.style.display = "none";
-      });
-      panel.style.display = visible ? "none" : "block";
-      if (!visible) renderPanelContents(panel);
+      showHidePanel();
     });
 
-    container.appendChild(panel);
-    menu.appendChild(container);
+    // close on outside click
+    const outsideClose = (e) => {
+      if (!panel.contains(e.target) && e.target !== entry) {
+        panel.style.display = "none";
+      }
+    };
+    document.addEventListener("mousedown", outsideClose);
 
-    console.log("[Dangan Trial] Wand entry injected beside menu");
+    // reposition on resize
+    window.addEventListener("resize", () => {
+      if (panel.style.display === "block") {
+        // reposition relative to entry
+        const rect = entry.getBoundingClientRect();
+        const pw = Math.min(panel.offsetWidth || 260, Math.min(window.innerWidth - 16, 320));
+        let left = rect.right + 8;
+        if (left + pw > window.innerWidth - 8) left = rect.left - pw - 8;
+        left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+        let top = rect.top;
+        if (top + panel.offsetHeight > window.innerHeight - 8) top = Math.max(8, window.innerHeight - panel.offsetHeight - 8);
+        panel.style.left = Math.round(left) + "px";
+        panel.style.top = Math.round(top) + "px";
+      }
+    });
+
+    console.log("[Dangan Trial] Wand entry injected (floating panel appended to body)");
   }
 
   function setupExtension() {
@@ -330,5 +395,5 @@
     setupExtension();
   }, 500);
 
-  console.log("[Dangan Trial] Wand Menu beside panel loaded");
+  console.log("[Dangan Trial] Wand Menu beside/floating panel loaded");
 })();
