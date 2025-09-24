@@ -3,39 +3,31 @@
 /* Toggle button near chat input */
 #dangan-toggle-btn {
   position: fixed;
-  bottom: 70px;   /* sits above chat input area */
+  bottom: 80px;
   right: 12px;
-  z-index: 100000;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  z-index: 99999;
+  padding: 8px 12px;
   border-radius: 8px;
   background: linear-gradient(180deg,#ffec7a,#ffd14a);
   color: #000;
-  font-weight: 700;
+  font-weight: bold;
   border: none;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  font-size: 13px;
+  font-size: 14px;
 }
 
-/* Panel container (absolute overlay placed above chat input) */
 #dangan-panel {
-  position: absolute; /* positioned relative to chat container */
-  bottom: 56px; /* offset above send area */
-  left: 8px;
-  right: 8px;
-  max-width: calc(100% - 16px);
-  background: rgba(14,14,14,0.96);
-  color: #ddd;
+  position: fixed;
+  bottom: 130px;
+  right: 12px;
+  z-index: 99998;
+  background: #fffbe8;
+  border: 2px solid #ffd14a;
   border-radius: 10px;
-  border: 1px solid #333;
   padding: 10px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-  z-index: 99999;
-  display: none; /* hidden by default */
-  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  display: none;
 }
 
 /* panel header row */
