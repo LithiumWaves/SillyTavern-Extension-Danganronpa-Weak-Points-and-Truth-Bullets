@@ -1,4 +1,4 @@
-// Dangan Trial (Manual Wand Menu Patch) - SillyTavern extension (index.js)
+// Dangan Trial (Manual Wand Menu Patch with floating panel) - SillyTavern extension (index.js)
 (async () => {
   function waitForST() {
     return new Promise((resolve) => {
@@ -24,10 +24,7 @@
   } = ctx;
 
   const MODULE_KEY = "dangan_trial_toggle";
-
-  const defaultSettings = {
-    bullets: [],
-  };
+  const defaultSettings = { bullets: [] };
 
   function ensureSettings() {
     if (!extensionSettings[MODULE_KEY]) {
@@ -48,20 +45,19 @@
     const s = extensionSettings[MODULE_KEY];
     const listEl = container.querySelector("#dangan-bullet-list");
     if (!listEl) return;
-
     listEl.innerHTML = "";
+
     if (!s.bullets.length) {
       listEl.innerHTML = `<div style="color:#aaa;padding:8px 2px;">No Truth Bullets. Add one below.</div>`;
     } else {
       s.bullets.forEach((b, idx) => {
         const btn = document.createElement("button");
         btn.className = "dangan-bullet-btn";
+        btn.textContent = b.used ? `(used) ${b.name}` : b.name;
         if (b.used) {
           btn.classList.add("used");
           btn.disabled = true;
-          btn.textContent = `(used) ${b.name}`;
-        } else btn.textContent = b.name;
-
+        }
         btn.addEventListener("click", (ev) => {
           ev.stopPropagation();
           if (b.used) return;
@@ -84,7 +80,6 @@
           s.bullets[idx].used = true;
           saveSettingsDebounced();
           renderPanelContents(container);
-
           const md = SillyTavern.getContext().chatMetadata;
           md["dangan_last_fired"] = { bullet: b.name, time: Date.now() };
           saveMetadata();
@@ -96,12 +91,8 @@
     const addBtn = container.querySelector("#dangan-add-btn");
     const addInput = container.querySelector("#dangan-add-input");
     if (addBtn && addInput) {
-      // Prevent wand from collapsing when interacting with inputs/buttons
-      addBtn.addEventListener("click", (ev) => ev.stopPropagation());
-      addInput.addEventListener("click", (ev) => ev.stopPropagation());
-      addInput.addEventListener("keydown", (ev) => ev.stopPropagation());
-
-      addBtn.onclick = () => {
+      addBtn.onclick = (ev) => {
+        ev.stopPropagation();
         const v = (addInput.value || "").trim();
         if (!v) return;
         s.bullets.push({ name: v, used: false });
@@ -109,8 +100,9 @@
         addInput.value = "";
         renderPanelContents(container);
       };
-      addInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") addBtn.click();
+      addInput.addEventListener("keydown", (ev) => {
+        ev.stopPropagation();
+        if (ev.key === "Enter") addBtn.click();
       });
     }
   }
@@ -126,9 +118,7 @@
       const desc = p1.trim().replace(/"/g, "&quot;");
       return `<button class="dangan-weak-btn" data-wp="${desc}">Weak Point: ${desc}</button>`;
     });
-    try { el.innerHTML = replaced; } catch (e) {
-      console.warn("[Dangan Trial] failed to replace WP token", e);
-    }
+    try { el.innerHTML = replaced; } catch (e) {}
     el.dataset.danganProcessed = "true";
   }
 
@@ -136,7 +126,6 @@
     const btn = ev.target.closest(".dangan-weak-btn");
     if (!btn) return;
     const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
-
     document.querySelectorAll(".dangan-weak-menu-floating").forEach((x) => x.remove());
 
     const menu = document.createElement("div");
@@ -159,7 +148,6 @@
         bbtn.addEventListener("click", (ev2) => {
           ev2.stopPropagation();
           if (b.used) return;
-
           const selectors = [
             "textarea",
             "textarea.input-message",
@@ -180,11 +168,9 @@
           saveSettingsDebounced();
           const cont = document.querySelector("#dangan-panel-container");
           if (cont) renderPanelContents(cont);
-
           const md = SillyTavern.getContext().chatMetadata;
           md["dangan_last_target"] = { weakPoint: desc, bullet: b.name, ts: Date.now() };
           saveMetadata();
-
           menu.remove();
         });
         menuList.appendChild(bbtn);
@@ -195,17 +181,9 @@
     const menuWidth = Math.min(320, window.innerWidth - 24);
     menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8)) + "px";
     menu.style.top = rect.bottom + 8 + "px";
-
-    const off = (e) => {
-      if (!menu.contains(e.target) && e.target !== btn) {
-        menu.remove();
-        window.removeEventListener("mousedown", off);
-      }
-    };
-    window.addEventListener("mousedown", off);
   }
 
-  // 🔥 NEW: add entry directly inside wand dropdown (behaves like native collapsible)
+  // ✅ Wand menu patch with floating panel
   function patchWandMenu() {
     const menu = document.querySelector("#extensionsMenu");
     if (!menu) {
@@ -219,25 +197,29 @@
     container.id = "dangan_wand_container";
     container.className = "extension_container interactable";
     container.tabIndex = 0;
+    container.style.position = "relative"; // anchor for floating panel
 
-    // header (clickable)
     const entry = document.createElement("div");
-    entry.className = "list-group-item flex-container flexGap5 interactable collapsible";
-    entry.setAttribute("role", "button");
+    entry.className = "list-group-item flex-container flexGap5 interactable";
     entry.title = "Manage Truth Bullets";
     entry.innerHTML = `<span style="font-size:1.2em">💥</span> Truth Bullets`;
     container.appendChild(entry);
 
-    // collapsible panel (use class extension_tab_content so ST CSS/behavior matches)
+    // floating creme panel
     const panel = document.createElement("div");
     panel.id = "dangan-panel-container";
-    panel.className = "extension_tab_content";
     panel.style.display = "none";
-    panel.style.padding = "8px";
+    panel.style.position = "absolute";
+    panel.style.top = "0";
+    panel.style.left = "100%";
+    panel.style.marginLeft = "8px";
     panel.style.background = "#fffbe8";
-    panel.style.borderTop = "1px solid #ffd14a";
-    panel.style.maxHeight = "50vh";
+    panel.style.border = "1px solid #ffd14a";
+    panel.style.borderRadius = "6px";
+    panel.style.padding = "8px";
+    panel.style.maxHeight = "70vh";
     panel.style.overflowY = "auto";
+    panel.style.zIndex = "9999";
 
     panel.innerHTML = `
       <div class="d-header">
@@ -250,22 +232,9 @@
       </div>
     `;
 
-    // stop clicks inside panel from collapsing the wand
-    panel.addEventListener("click", (ev) => ev.stopPropagation());
-    // ensure inputs/buttons inside don't bubble up
-    panel.querySelectorAll("input, button").forEach((el) => {
-      el.addEventListener("click", (ev) => ev.stopPropagation());
-      el.addEventListener("keydown", (ev) => ev.stopPropagation());
-    });
-
-    // native-like toggle behavior: show/hide this panel and hide others
     entry.addEventListener("click", (ev) => {
       ev.stopPropagation();
       const visible = panel.style.display === "block";
-      // hide other patched panels (only ours have extension_tab_content id dangan-panel-container potentially)
-      menu.querySelectorAll(".extension_tab_content").forEach((el) => {
-        if (el !== panel) el.style.display = "none";
-      });
       panel.style.display = visible ? "none" : "block";
       if (!visible) renderPanelContents(panel);
     });
@@ -273,7 +242,7 @@
     container.appendChild(panel);
     menu.appendChild(container);
 
-    console.log("[Dangan Trial] Wand entry injected");
+    console.log("[Dangan Trial] Wand entry injected (floating panel)");
   }
 
   function setupExtension() {
@@ -299,14 +268,12 @@
     mo.observe(chatRoot, { childList: true, subtree: true });
 
     document.addEventListener("click", (ev) => {
-      if (ev.target && ev.target.matches && ev.target.matches(".dangan-weak-btn")) {
-        handleWeakClick(ev);
-      }
+      if (ev.target && ev.target.matches(".dangan-weak-btn")) handleWeakClick(ev);
     });
 
     eventSource.on(event_types.MESSAGE_SENT, (payload) => {
       try {
-        const msg = payload?.message || (payload && payload.content) || "";
+        const msg = payload?.message || "";
         const m = /I use Truth Bullet:\s*([^—\n\r]+)/i.exec(msg);
         if (m) {
           const name = m[1].trim();
@@ -322,9 +289,7 @@
           md["dangan_last_fired"] = { bullet: name, time: Date.now() };
           saveMetadata();
         }
-      } catch (err) {
-        console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
-      }
+      } catch (err) {}
     });
   }
 
@@ -333,5 +298,5 @@
     setupExtension();
   }, 500);
 
-  console.log("[Dangan Trial] Wand Menu inline panel loaded");
+  console.log("[Dangan Trial] Wand Menu floating panel loaded");
 })();
