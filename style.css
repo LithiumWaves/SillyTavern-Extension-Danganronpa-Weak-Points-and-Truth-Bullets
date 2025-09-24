@@ -2,6 +2,10 @@
 
 /* Toggle button near chat input */
 #dangan-toggle-btn {
+  position: fixed;
+  bottom: 70px;   /* sits above chat input area */
+  right: 12px;
+  z-index: 100000;
   display: inline-flex;
   align-items: center;
   gap: 6px;
