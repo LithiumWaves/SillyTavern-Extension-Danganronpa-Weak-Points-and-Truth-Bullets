@@ -75,14 +75,14 @@
     toggleBtn.innerText = "Truth Bullets";
     // style class may be present from CSS file
 
-    // Attach toggle next to send area in a non-invasive way
-    try {
-      // Prefer appending to the sendArea but not inside main controls that would resize
-      sendArea.appendChild(toggleBtn);
-    } catch (err) {
-      // fallback to body
-      document.body.appendChild(toggleBtn);
-    }
+        // Always append to body, then float near input with CSS
+    document.body.appendChild(toggleBtn);
+
+    // Force positioning bottom-right above chat input
+    toggleBtn.style.position = "fixed";
+    toggleBtn.style.bottom = "72px";  // ~just above textbox
+    toggleBtn.style.right = "12px";
+    toggleBtn.style.zIndex = 100000;
 
     // Panel overlay - absolute placed relative to the viewport; we'll position it above the send area
     const panel = document.createElement("div");
