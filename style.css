@@ -17,7 +17,7 @@
   font-size: 14px;
 }
 
-#dangan-panel {
+#dangan-panel-root {
   position: fixed;
   bottom: 130px;
   right: 12px;
@@ -31,13 +31,13 @@
 }
 
 /* panel header row */
-#dangan-panel .d-header {
+#dangan-panel-root .d-header {
   display:flex;
   align-items:center;
   justify-content:space-between;
   margin-bottom:8px;
 }
-#dangan-panel .d-header h4 { margin:0; color:#ffeb7a; font-size:14px; }
+#dangan-panel-root .d-header h4 { margin:0; color:#ffeb7a; font-size:14px; }
 
 /* bullet list */
 #dangan-bullet-list {
