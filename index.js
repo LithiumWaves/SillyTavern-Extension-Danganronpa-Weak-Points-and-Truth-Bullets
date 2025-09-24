@@ -96,6 +96,11 @@
     const addBtn = container.querySelector("#dangan-add-btn");
     const addInput = container.querySelector("#dangan-add-input");
     if (addBtn && addInput) {
+      // Prevent wand from collapsing when interacting with inputs/buttons
+      addBtn.addEventListener("click", (ev) => ev.stopPropagation());
+      addInput.addEventListener("click", (ev) => ev.stopPropagation());
+      addInput.addEventListener("keydown", (ev) => ev.stopPropagation());
+
       addBtn.onclick = () => {
         const v = (addInput.value || "").trim();
         if (!v) return;
@@ -200,7 +205,7 @@
     window.addEventListener("mousedown", off);
   }
 
-  // 🔥 NEW: add entry directly inside wand dropdown
+  // 🔥 NEW: add entry directly inside wand dropdown (behaves like native collapsible)
   function patchWandMenu() {
     const menu = document.querySelector("#extensionsMenu");
     if (!menu) {
@@ -215,14 +220,18 @@
     container.className = "extension_container interactable";
     container.tabIndex = 0;
 
+    // header (clickable)
     const entry = document.createElement("div");
-    entry.id = "dangan_wand_btn";
-    entry.className = "list-group-item flex-container flexGap5 interactable";
+    entry.className = "list-group-item flex-container flexGap5 interactable collapsible";
+    entry.setAttribute("role", "button");
     entry.title = "Manage Truth Bullets";
     entry.innerHTML = `<span style="font-size:1.2em">💥</span> Truth Bullets`;
+    container.appendChild(entry);
 
+    // collapsible panel (use class extension_tab_content so ST CSS/behavior matches)
     const panel = document.createElement("div");
     panel.id = "dangan-panel-container";
+    panel.className = "extension_tab_content";
     panel.style.display = "none";
     panel.style.padding = "8px";
     panel.style.background = "#fffbe8";
@@ -241,15 +250,26 @@
       </div>
     `;
 
-    entry.addEventListener("click", () => {
+    // stop clicks inside panel from collapsing the wand
+    panel.addEventListener("click", (ev) => ev.stopPropagation());
+    // ensure inputs/buttons inside don't bubble up
+    panel.querySelectorAll("input, button").forEach((el) => {
+      el.addEventListener("click", (ev) => ev.stopPropagation());
+      el.addEventListener("keydown", (ev) => ev.stopPropagation());
+    });
+
+    // native-like toggle behavior: show/hide this panel and hide others
+    entry.addEventListener("click", (ev) => {
+      ev.stopPropagation();
       const visible = panel.style.display === "block";
-      menu.querySelectorAll(".extension_container > div#dangan-panel-container")
-        .forEach((el) => (el.style.display = "none"));
+      // hide other patched panels (only ours have extension_tab_content id dangan-panel-container potentially)
+      menu.querySelectorAll(".extension_tab_content").forEach((el) => {
+        if (el !== panel) el.style.display = "none";
+      });
       panel.style.display = visible ? "none" : "block";
       if (!visible) renderPanelContents(panel);
     });
 
-    container.appendChild(entry);
     container.appendChild(panel);
     menu.appendChild(container);
 
