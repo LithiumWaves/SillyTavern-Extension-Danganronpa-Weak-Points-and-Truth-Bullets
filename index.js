@@ -64,169 +64,147 @@
 
   // Create toggle button and panel DOM (only once)
   function createUI() {
-    // prevent duplicate
-    if (document.getElementById("dangan-toggle-btn")) return;
+    // --- REPLACE the existing createUI() with this block ---
+function createUI() {
+  // If already created, return
+  if (document.getElementById("dangan-toggle-btn")) return;
 
-    const sendArea = findSendArea();
-    // Create toggle
-    const toggleBtn = document.createElement("button");
-    toggleBtn.id = "dangan-toggle-btn";
-    toggleBtn.title = "Open Truth Bullets";
-    toggleBtn.innerText = "Truth Bullets";
-    // style class may be present from CSS file
+  // find send area (used only for positioning the panel)
+  const sendArea = findSendArea();
 
-        // Always append to body, then float near input with CSS
-    document.body.appendChild(toggleBtn);
+  // Create the floating toggle button (always append to body so it doesn't move ST layout)
+  const toggleBtn = document.createElement("button");
+  toggleBtn.id = "dangan-toggle-btn";
+  toggleBtn.title = "Open Truth Bullets";
+  toggleBtn.innerText = "Truth Bullets";
 
-    // Force positioning bottom-right above chat input
-    toggleBtn.style.position = "fixed";
-    toggleBtn.style.bottom = "72px";  // ~just above textbox
-    toggleBtn.style.right = "12px";
-    toggleBtn.style.zIndex = 100000;
+  // Inline styles to avoid relying on CSS file loading/sanitization
+  Object.assign(toggleBtn.style, {
+    position: "fixed",
+    bottom: "calc(env(safe-area-inset-bottom, 0px) + 78px)", // mobile safe area
+    right: "12px",
+    zIndex: "100000",
+    padding: "8px 10px",
+    borderRadius: "8px",
+    background: "linear-gradient(180deg,#ffec7a,#ffd14a)",
+    color: "#000",
+    fontWeight: "700",
+    border: "none",
+    cursor: "pointer",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.25)",
+    fontSize: "13px",
+    touchAction: "manipulation"
+  });
 
-    // Panel overlay - absolute placed relative to the viewport; we'll position it above the send area
+  // Append the button to the body (guaranteed visibility)
+  document.body.appendChild(toggleBtn);
+
+  // Function to create panel overlay (if not present)
+  function buildPanel() {
+    if (document.getElementById("dangan-panel")) return;
     const panel = document.createElement("div");
     panel.id = "dangan-panel";
-    panel.style.display = "none";
+    // fixed so it overlays and never pushes content
+    Object.assign(panel.style, {
+      position: "fixed",
+      display: "none",
+      zIndex: "100000",
+      maxWidth: "min(96vw, 520px)",
+      background: "rgba(14,14,14,0.96)",
+      color: "#ddd",
+      borderRadius: "10px",
+      padding: "10px",
+      border: "1px solid #333",
+      boxShadow: "0 8px 30px rgba(0,0,0,0.6)",
+      fontSize: "13px"
+    });
+
     panel.innerHTML = `
-      <div class="d-header">
-        <h4>Dangan Trial — Truth Bullets</h4>
+      <div class="d-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <h4 style="margin:0;color:#ffeb7a;font-size:14px;">Dangan Trial — Truth Bullets</h4>
         <div style="display:flex;gap:6px;align-items:center;">
           <button id="dangan-close" style="background:transparent;border:none;color:#888;cursor:pointer;font-weight:700">✕</button>
         </div>
       </div>
-      <div id="dangan-bullet-list"></div>
-      <div id="dangan-add-row">
-        <input id="dangan-add-input" placeholder="New bullet name..." />
-        <button id="dangan-add-btn">Add</button>
+      <div id="dangan-bullet-list" style="min-height:40px;"></div>
+      <div id="dangan-add-row" style="display:flex;gap:6px;margin-top:8px;">
+        <input id="dangan-add-input" placeholder="New bullet name..." style="flex:1;padding:6px;border-radius:6px;border:1px solid #333;background:#111;color:#fff;" />
+        <button id="dangan-add-btn" style="padding:6px 8px;border-radius:6px;background:#ffeb7a;border:none;font-weight:700;cursor:pointer;">Add</button>
       </div>
     `;
     document.body.appendChild(panel);
 
-    // Positioning helper: place panel above the send area, centered-ish
+    // Close handler
+    const closeBtn = panel.querySelector("#dangan-close");
+    if (closeBtn) closeBtn.addEventListener("click", () => { panel.style.display = "none"; });
+
+    // Position the panel relative to the send area (tries to sit above it)
     function positionPanel() {
       try {
-        const rect = sendArea.getBoundingClientRect();
-        // place above the send area; respect viewport
-        const panelEl = document.getElementById("dangan-panel");
-        const panelWidth = Math.min(window.innerWidth - 16, 520);
-        panelEl.style.width = Math.min(rect.width - 8 || panelWidth, panelWidth) + "px";
-        // prefer bottom: set absolute top
-        let top = rect.top - panelEl.offsetHeight - 8;
+        const rect = (sendArea && sendArea.getBoundingClientRect) ? sendArea.getBoundingClientRect() : { top: window.innerHeight - 120, left: 12, width: Math.min(window.innerWidth - 24, 520) };
+        // ensure panel has been added to DOM so offsetHeight is available
+        panel.style.width = Math.min(rect.width - 8 || Math.min(window.innerWidth - 16, 520), 520) + "px";
+        let top = rect.top - panel.offsetHeight - 8;
         if (top < 8) top = 8;
-        // set left near send area left
         let left = rect.left + 4;
-        if (left + panelEl.offsetWidth > window.innerWidth - 8) {
-          left = Math.max(8, window.innerWidth - panelEl.offsetWidth - 8);
+        if (left + panel.offsetWidth > window.innerWidth - 8) {
+          left = Math.max(8, window.innerWidth - panel.offsetWidth - 8);
         }
-        panelEl.style.left = left + "px";
-        panelEl.style.top = top + "px";
+        panel.style.left = left + "px";
+        panel.style.top = top + "px";
+        // clear bottom in case earlier fallback set it
+        panel.style.bottom = "auto";
       } catch (e) {
-        // fallback to anchored bottom-left
-        const panelEl = document.getElementById("dangan-panel");
-        panelEl.style.left = "8px";
-        panelEl.style.bottom = "64px";
+        // fallback anchored above safe area
+        panel.style.left = "8px";
+        panel.style.bottom = "calc(env(safe-area-inset-bottom, 0px) + 64px)";
+        panel.style.top = "auto";
       }
     }
 
-    // Toggle logic
-    toggleBtn.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      const panelEl = document.getElementById("dangan-panel");
-      panelEl.style.display = panelEl.style.display === "block" ? "none" : "block";
-      // position when opening
-      if (panelEl.style.display === "block") {
-        positionPanel();
-      }
-    });
-
-    // Close button
-    panel.querySelector("#dangan-close").addEventListener("click", () => {
-      document.getElementById("dangan-panel").style.display = "none";
-    });
-
-    // reposition on resize/scroll
-    window.addEventListener("resize", () => {
-      const p = document.getElementById("dangan-panel");
-      if (p && p.style.display === "block") positionPanel();
-    });
-    window.addEventListener("scroll", () => {
-      const p = document.getElementById("dangan-panel");
-      if (p && p.style.display === "block") positionPanel();
-    });
-
-    // click outside to close (but let panel clicks pass)
-    document.addEventListener("mousedown", (ev) => {
-      const p = document.getElementById("dangan-panel");
-      const t = document.getElementById("dangan-toggle-btn");
-      if (!p || !t) return;
-      if (p.style.display !== "block") return;
-      if (!p.contains(ev.target) && !t.contains(ev.target)) {
-        p.style.display = "none";
-      }
-    });
+    // Expose positionPanel to outer scope by attaching to element (used on toggle)
+    panel.__dangan_position = positionPanel;
   }
 
-  // Render the bullets list inside the panel
-  function renderPanelContents() {
-    ensureSettings();
-    const s = extensionSettings[MODULE_KEY];
-    const listEl = document.getElementById("dangan-bullet-list");
-    if (!listEl) return;
-    listEl.innerHTML = "";
-    if (!s.bullets.length) {
-      listEl.innerHTML = `<div style="color:#aaa;padding:8px 2px;">No Truth Bullets. Add one below.</div>`;
-    } else {
-      s.bullets.forEach((b, idx) => {
-        const btn = document.createElement("button");
-        btn.className = "dangan-bullet-btn";
-        if (b.used) { btn.classList.add("used"); btn.disabled = true; btn.textContent = `(used) ${b.name}`; }
-        else btn.textContent = b.name;
-        btn.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          if (b.used) return;
-          // Prefill chat input
-          const selectors = ["textarea", "textarea.input-message", "input[type=text]", "#message", ".chat-input textarea"];
-          for (const sel of selectors) {
-            const el = document.querySelector(sel);
-            if (el) {
-              el.focus();
-              try { el.value = `I use Truth Bullet: ${b.name} — `; } catch(e) {}
-              el.dispatchEvent(new Event('input', { bubbles: true }));
-              break;
-            }
-          }
-          // mark used locally
-          s.bullets[idx].used = true;
-          saveSettingsDebounced();
-          renderPanelContents();
-
-          // record metadata for LLM reference
-          const md = SillyTavern.getContext().chatMetadata;
-          md['dangan_last_fired'] = { bullet: b.name, time: Date.now() };
-          saveMetadata();
-        });
-        listEl.appendChild(btn);
-      });
+  // Toggle behavior
+  toggleBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    // ensure panel exists
+    buildPanel();
+    const panel = document.getElementById("dangan-panel");
+    if (!panel) return;
+    panel.style.display = (panel.style.display === "block") ? "none" : "block";
+    if (panel.style.display === "block") {
+      // let layout settle then position
+      setTimeout(() => { panel.__dangan_position && panel.__dangan_position(); }, 30);
     }
+  });
 
-    // add handlers for add row
-    const addBtn = document.getElementById("dangan-add-btn");
-    const addInput = document.getElementById("dangan-add-input");
-    if (addBtn && addInput) {
-      addBtn.onclick = () => {
-        const v = (addInput.value || "").trim();
-        if (!v) return;
-        s.bullets.push({ name: v, used: false });
-        saveSettingsDebounced();
-        addInput.value = "";
-        renderPanelContents();
-      };
-      addInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") addBtn.click();
-      });
+  // reposition on resize/scroll so it stays near send area
+  window.addEventListener("resize", () => {
+    const p = document.getElementById("dangan-panel");
+    if (p && p.style.display === "block") p.__dangan_position && p.__dangan_position();
+  });
+  window.addEventListener("scroll", () => {
+    const p = document.getElementById("dangan-panel");
+    if (p && p.style.display === "block") p.__dangan_position && p.__dangan_position();
+  });
+
+  // click outside to close panel (but allow clicks inside panel)
+  document.addEventListener("pointerdown", (ev) => {
+    const p = document.getElementById("dangan-panel");
+    const t = document.getElementById("dangan-toggle-btn");
+    if (!p || p.style.display !== "block") return;
+    if (!p.contains(ev.target) && !t.contains(ev.target)) {
+      p.style.display = "none";
     }
-  }
+  });
+
+  // debug log so you can check mobile console
+  console.log("[Dangan Trial] toggle appended to body");
+}
+// --- end replacement ---
+
 
   // Replace [WeakPoint: ...] tokens in character messages with styled buttons
   function processRenderedMessageElement(el) {
