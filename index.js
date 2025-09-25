@@ -12,7 +12,6 @@
     });
   }
   await waitForST();
-  window.processRenderedMessageElement = processRenderedMessageElement;
 
   // 🔹 Inject CSS once
   if (!document.getElementById("dangan-style")) {
@@ -86,6 +85,7 @@
         text-shadow: 0 0 10px rgba(255, 255, 0, 1),
                      0 0 20px rgba(255, 255, 100, 0.8);
       }
+      .dangan-weak-menu-floating { min-width: 180px; }
     `;
     document.head.appendChild(style);
   }
@@ -98,15 +98,19 @@
     saveSettingsDebounced,
     chatMetadata,
     saveMetadata,
-  } = ctx;
+  } = ctx || {};
 
   const MODULE_KEY = "dangan_trial_toggle";
   const defaultSettings = { bullets: [] };
 
   function ensureSettings() {
+    if (!extensionSettings) {
+      console.warn("[Dangan Trial] extensionSettings not available");
+      return structuredClone(defaultSettings);
+    }
     if (!extensionSettings[MODULE_KEY]) {
       extensionSettings[MODULE_KEY] = structuredClone(defaultSettings);
-      saveSettingsDebounced();
+      saveSettingsDebounced && saveSettingsDebounced();
     } else {
       for (const k of Object.keys(defaultSettings)) {
         if (!Object.hasOwn(extensionSettings[MODULE_KEY], k)) {
@@ -117,9 +121,74 @@
     return extensionSettings[MODULE_KEY];
   }
 
+  // Helper: insert text into the active chat/editor
+  function insertBulletText(text) {
+    try {
+      // Try ProseMirror editor first (modern ST)
+      const pm = document.querySelector(".ProseMirror");
+      if (pm) {
+        pm.focus();
+        // collapse selection to end
+        const range = document.createRange();
+        range.selectNodeContents(pm);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        // execCommand insertText tends to be recognized by ProseMirror
+        document.execCommand("insertText", false, text);
+        // dispatch input event to notify listeners
+        pm.dispatchEvent(new Event("input", { bubbles: true }));
+        console.log("[Dangan Trial] Inserted into ProseMirror:", text);
+        return true;
+      }
+
+      // older single contenteditable (e.g., #chat-input)
+      const contentEditable = document.querySelector("#chat-input[contenteditable], [contenteditable].chat-input, [contenteditable].message-input");
+      if (contentEditable) {
+        contentEditable.focus();
+        // set caret at end and insert
+        const range = document.createRange();
+        range.selectNodeContents(contentEditable);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand("insertText", false, text);
+        contentEditable.dispatchEvent(new Event("input", { bubbles: true }));
+        console.log("[Dangan Trial] Inserted into contentEditable:", text);
+        return true;
+      }
+
+      // fallback: textareas / inputs
+      const inputs = document.querySelectorAll("textarea, input[type=text], #message, .chat-input textarea");
+      for (const el of inputs) {
+        el.focus();
+        if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {
+          el.value = text;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          console.log("[Dangan Trial] Inserted into input/textarea:", text, el);
+          return true;
+        } else if (el.isContentEditable) {
+          // rare case
+          el.textContent = text;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          console.log("[Dangan Trial] Inserted into contentEditable fallback:", text);
+          return true;
+        }
+      }
+
+      console.warn("[Dangan Trial] No suitable editor found to insert bullet.");
+      return false;
+    } catch (err) {
+      console.warn("[Dangan Trial] Error inserting bullet:", err);
+      return false;
+    }
+  }
+
   function renderPanelContents(container) {
     ensureSettings();
-    const s = extensionSettings[MODULE_KEY];
+    const s = extensionSettings ? extensionSettings[MODULE_KEY] : ensureSettings();
     const listEl = container.querySelector("#dangan-bullet-list");
     if (!listEl) return;
 
@@ -145,49 +214,19 @@
         btn.addEventListener("click", (ev) => {
           ev.stopPropagation();
           if (b.used) return;
-const selectors = [
-  "#chat-input",            // old contentEditable fallback
-  ".ProseMirror",           // ✅ new ST rich-text input
-  "textarea",
-  "textarea.input-message",
-  "input[type=text]",
-  "#message",
-  ".chat-input textarea",
-];
 
-for (const sel of selectors) {
-  const el = document.querySelector(sel);
-  if (el) {
-    el.focus();
-    try {
-      if (el.tagName === "DIV" && (el.isContentEditable || el.classList.contains("ProseMirror"))) {
-        // Insert text node for ProseMirror/editor-based input
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        const selObj = window.getSelection();
-        selObj.removeAllRanges();
-        selObj.addRange(range);
-
-        document.execCommand("insertText", false, `I use Truth Bullet: ${b.name} — `);
-      } else {
-        el.value = `I use Truth Bullet: ${b.name} — `;
-      }
-    } catch (e) {
-      console.warn("[Dangan Trial] Failed to insert bullet:", e);
-    }
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    break;
-  }
-}
-
+          const did = insertBulletText(`I use Truth Bullet: ${b.name} — `);
+          if (!did) {
+            // fallback: still mark it used but log warning
+            console.warn("[Dangan Trial] Insertion fallback failed when clicking panel bullet.");
+          }
           s.bullets[idx].used = true;
-          saveSettingsDebounced();
+          saveSettingsDebounced && saveSettingsDebounced();
           renderPanelContents(container);
 
           const md = SillyTavern.getContext().chatMetadata;
           md["dangan_last_fired"] = { bullet: b.name, time: Date.now() };
-          saveMetadata();
+          saveMetadata && saveMetadata();
         });
 
         wrapper.appendChild(btn);
@@ -204,7 +243,7 @@ for (const sel of selectors) {
           removeBtn.addEventListener("click", (ev) => {
             ev.stopPropagation();
             s.bullets.splice(idx, 1);
-            saveSettingsDebounced();
+            saveSettingsDebounced && saveSettingsDebounced();
             renderPanelContents(container);
           });
 
@@ -218,25 +257,29 @@ for (const sel of selectors) {
     const addBtn = container.querySelector("#dangan-add-btn");
     const addInput = container.querySelector("#dangan-add-input");
     if (addBtn && addInput) {
-      addBtn.addEventListener("click", (ev) => ev.stopPropagation());
+      // prevent duplicate handlers
+      addBtn.replaceWith(addBtn.cloneNode(true));
+      const newAddBtn = container.querySelector("#dangan-add-btn");
+      newAddBtn.addEventListener("click", (ev) => ev.stopPropagation());
+
       addInput.addEventListener("click", (ev) => ev.stopPropagation());
       addInput.addEventListener("keydown", (ev) => ev.stopPropagation());
 
-      addBtn.onclick = () => {
+      newAddBtn.onclick = () => {
         const v = (addInput.value || "").trim();
         if (!v) return;
         s.bullets.push({ name: v, used: false });
-        saveSettingsDebounced();
+        saveSettingsDebounced && saveSettingsDebounced();
         addInput.value = "";
         renderPanelContents(container);
       };
       addInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") addBtn.click();
+        if (e.key === "Enter") newAddBtn.click();
       });
     }
   }
 
-  // 🔹 Highlight replacement
+  // 🔹 Inline highlight replacement
   function processRenderedMessageElement(el) {
     if (!el) return;
     const inner = el.innerHTML || "";
@@ -244,7 +287,7 @@ for (const sel of selectors) {
       el.dataset.danganProcessed = "true";
       return;
     }
-    const replaced = inner.replace(/\[WeakPoint:(.*?)\]/g, (m, p1) => {
+    const replaced = inner.replace(/\[WeakPoint:([\s\S]*?)\]/g, (m, p1) => {
       const desc = p1.trim().replace(/"/g, "&quot;");
       return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
     });
@@ -256,31 +299,28 @@ for (const sel of selectors) {
     el.dataset.danganProcessed = "true";
   }
 
-  // 🔹 Floating menu click handler
+  // 🔹 Click handler for highlights -> floating menu
   function handleWeakClick(btn) {
     if (!btn) return;
     const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
 
+    // remove any existing menus
     document.querySelectorAll(".dangan-weak-menu-floating").forEach((x) => x.remove());
 
     const menu = document.createElement("div");
     menu.className = "dangan-weak-menu-floating dangan-panel";
     menu.innerHTML = `
-      <div style="color:#66aaff;font-weight:700;margin-bottom:6px;">
-        Weak Point: ${desc}
-      </div>
+      <div style="color:#66aaff;font-weight:700;margin-bottom:6px;">Weak Point: ${desc}</div>
       <div id="dangan-menu-bullets" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-      <div style="margin-top:6px;color:#aaa;font-size:12px;">
-        Click a bullet to use it against this Weak Point.
-      </div>
+      <div style="margin-top:6px;color:#aaa;font-size:12px;">Click a bullet to use it against this Weak Point.</div>
     `;
     document.body.appendChild(menu);
 
-    // Force visibility so it doesn’t inherit hidden state
+    // Force visible (in case CSS inherited hidden)
     menu.style.display = "block";
     menu.style.visibility = "visible";
     menu.style.opacity = "1";
-
+    menu.style.zIndex = 9999;
 
     const menuList = menu.querySelector("#dangan-menu-bullets");
     const s = ensureSettings();
@@ -297,52 +337,19 @@ for (const sel of selectors) {
           ev2.stopPropagation();
           if (b.used) return;
 
-const selectors = [
-  "#chat-input",            // old contentEditable fallback
-  ".ProseMirror",           // ✅ new ST rich-text input
-  "textarea",
-  "textarea.input-message",
-  "input[type=text]",
-  "#message",
-  ".chat-input textarea",
-];
-
-for (const sel of selectors) {
-  const el = document.querySelector(sel);
-  if (el) {
-    el.focus();
-    try {
-      if (el.tagName === "DIV" && (el.isContentEditable || el.classList.contains("ProseMirror"))) {
-        // Insert text node for ProseMirror/editor-based input
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        const selObj = window.getSelection();
-        selObj.removeAllRanges();
-        selObj.addRange(range);
-
-        document.execCommand("insertText", false, `I use Truth Bullet: ${b.name} — `);
-      } else {
-        el.value = `I use Truth Bullet: ${b.name} — `;
-      }
-    } catch (e) {
-      console.warn("[Dangan Trial] Failed to insert bullet:", e);
-    }
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    break;
-  }
-}
-
-
+          const inserted = insertBulletText(`I use Truth Bullet: ${b.name} — `);
+          if (!inserted) {
+            console.warn("[Dangan Trial] Failed to insert bullet from floating menu.");
+          }
 
           s.bullets[idx].used = true;
-          saveSettingsDebounced();
+          saveSettingsDebounced && saveSettingsDebounced();
           const cont = document.querySelector("#dangan-panel-container");
           if (cont) renderPanelContents(cont);
 
           const md = SillyTavern.getContext().chatMetadata;
           md["dangan_last_target"] = { weakPoint: desc, bullet: b.name, ts: Date.now() };
-          saveMetadata();
+          saveMetadata && saveMetadata();
 
           menu.remove();
         });
@@ -351,14 +358,14 @@ for (const sel of selectors) {
       });
     }
 
-    // ✅ Position menu
+    // position menu near the clicked highlight
     const rect = btn.getBoundingClientRect();
     const menuWidth = Math.min(320, window.innerWidth - 24);
     menu.style.position = "fixed";
-    menu.style.zIndex = 9999;
     menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8)) + "px";
     menu.style.top = rect.bottom + 8 + "px";
 
+    // clicking outside removes menu
     const off = (e) => {
       if (!menu.contains(e.target) && e.target !== btn) {
         menu.remove();
@@ -498,28 +505,32 @@ for (const sel of selectors) {
       }
     });
 
-    eventSource.on(event_types.MESSAGE_SENT, (payload) => {
-      try {
-        const msg = payload?.message || (payload && payload.content) || "";
-        const m = /I use Truth Bullet:\s*([^—\n\r]+)/i.exec(msg);
-        if (m) {
-          const name = m[1].trim();
-          const s = ensureSettings();
-          const idx = s.bullets.findIndex(
-            (b) => b.name.toLowerCase() === name.toLowerCase() && !b.used
-          );
-          if (idx >= 0) {
-            s.bullets[idx].used = true;
-            saveSettingsDebounced();
+    if (eventSource && event_types) {
+      eventSource.on(event_types.MESSAGE_SENT, (payload) => {
+        try {
+          const msg = payload?.message || (payload && payload.content) || "";
+          const m = /I use Truth Bullet:\s*([^—\n\r]+)/i.exec(msg);
+          if (m) {
+            const name = m[1].trim();
+            const s = ensureSettings();
+            const idx = s.bullets.findIndex(
+              (b) => b.name.toLowerCase() === name.toLowerCase() && !b.used
+            );
+            if (idx >= 0) {
+              s.bullets[idx].used = true;
+              saveSettingsDebounced && saveSettingsDebounced();
+            }
+            const md = SillyTavern.getContext().chatMetadata;
+            md["dangan_last_fired"] = { bullet: name, time: Date.now() };
+            saveMetadata && saveMetadata();
           }
-          const md = SillyTavern.getContext().chatMetadata;
-          md["dangan_last_fired"] = { bullet: name, time: Date.now() };
-          saveMetadata();
+        } catch (err) {
+          console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
         }
-      } catch (err) {
-        console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
-      }
-    });
+      });
+    } else {
+      console.warn("[Dangan Trial] eventSource / event_types not available - MESSAGE_SENT handler skipped");
+    }
   }
 
   setTimeout(() => {
