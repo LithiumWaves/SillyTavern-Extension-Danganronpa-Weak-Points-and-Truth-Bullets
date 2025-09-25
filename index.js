@@ -228,25 +228,39 @@
     }
   }
 
-  // 🔹 Inline highlight replacement
-  function processRenderedMessageElement(el) {
-    if (!el) return;
-    const inner = el.innerHTML || "";
-    if (!inner.includes("[WeakPoint:")) {
-      el.dataset.danganProcessed = "true";
-      return;
+// 🔹 Inline highlight replacement
+function processRenderedMessageElement(el, entry) {
+  if (!el) return;
+
+  // If immersive version is available, always show that
+  if (!entry && el.dataset?.messageId) {
+    const id = parseInt(el.dataset.messageId, 10);
+    if (!isNaN(id) && window.SillyTavern) {
+      const ctx = window.SillyTavern.getContext();
+      entry = ctx?.chat?.find(e => e?.id === id);
     }
-    const replaced = inner.replace(/\[WeakPoint:([\s\S]*?)\]/g, (m, p1) => {
-      const desc = p1.trim().replace(/"/g, "&quot;");
-      return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
-    });
-    try {
-      el.innerHTML = replaced;
-    } catch (e) {
-      console.warn("[Dangan Trial] failed to replace WP token", e);
-    }
-    el.dataset.danganProcessed = "true";
   }
+
+  if (entry?.metadata?.dangan_display) {
+    el.innerText = entry.metadata.dangan_display;
+  }
+
+  const inner = el.innerHTML || "";
+  if (!inner.includes("[WeakPoint:")) {
+    el.dataset.danganProcessed = "true";
+    return;
+  }
+  const replaced = inner.replace(/\[WeakPoint:([\s\S]*?)\]/g, (m, p1) => {
+    const desc = p1.trim().replace(/"/g, "&quot;");
+    return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
+  });
+  try {
+    el.innerHTML = replaced;
+  } catch (e) {
+    console.warn("[Dangan Trial] failed to replace WP token", e);
+  }
+  el.dataset.danganProcessed = "true";
+}
 
   // 🔹 Click handler for highlights -> floating menu
   function handleWeakClick(btn) {
@@ -459,43 +473,34 @@ if (eventSource && event_types) {
       const text = entry?.mes ?? "";
       console.log("[Dangan Trial] MESSAGE_SENT fired:", { idx, text, entry });
 
-      if (text.includes("Fired Truth Bullet:")) {
-        const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(text);
-        if (m) {
-          const name = m[1].trim();
+if (text.includes("Fired Truth Bullet:")) {
+  const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(text);
+  if (m) {
+    const name = m[1].trim();
 
-          console.log("📩 Original outgoing (what user sees):", text);
+    console.log("📩 Original outgoing (what user sees):", text);
 
-          // What AI will see
-          const aiMessage = `[DANGAN:TruthBullet="${name}"]`;
+    // Store immersive "Fired Truth Bullet" text for UI
+    entry.metadata = entry.metadata || {};
+    entry.metadata.dangan_display = text;
 
-entry.metadata = entry.metadata || {};
-entry.metadata.dangan_display = text;
+    // What AI should see
+    const aiMessage = `[DANGAN:TruthBullet="${name}"]`;
+    entry.mes = text.replace(/Fired Truth Bullet:\s*([^—\n\r]+)/i, aiMessage);
 
-const rewritten = text.replace(
-  /Fired Truth Bullet:\s*([^—\n\r]+)/i,
-  `[DANGAN:TruthBullet="$1"]`
-);
-
-entry.mes = rewritten;
-
-
-console.log("🎭 Immersive shown in UI:", entry.metadata.dangan_display);
-console.log("🔒 Sent to AI:", entry.mes);
-
-        } else {
-          console.log("⚠️ Bullet marker found but regex failed to capture name.");
-        }
-      } else {
-        console.log("❌ No Truth Bullet detected in message.");
-      }
-    } catch (err) {
+    console.log("🎭 Immersive shown in UI:", entry.metadata.dangan_display);
+    console.log("🔒 Sent to AI:", entry.mes);
+  } else {
+    console.log("⚠️ Bullet marker found but regex failed to capture name.");
+  }
+}
+ } catch (err) {
       console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
     }
-  });
+  }); // ← closes eventSource.on
 } else {
   console.warn("[Dangan Trial] eventSource or event_types missing — cannot hook MESSAGE_SENT!");
-}
+} // ← closes outer if
 
   // 🔹 Init
   setTimeout(() => {
