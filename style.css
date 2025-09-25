@@ -108,21 +108,22 @@
   color: #e0e0e0;
 }
 
-/* weakpoint button inside chat */
-.dangan-weak-btn {
-  background: #2b2b2b;
-  color: #66aaff;
-  border-radius: 20px;
-  padding: 6px 12px;
-  margin: 4px;
-  border: 1px solid #003366;
-  cursor: pointer;
+/* inline weakpoint highlight inside chat text */
+.dangan-weak {
+  display: inline-block;
+  color: #ffff66; /* soft yellow */
+  background: rgba(255, 255, 0, 0.15); /* faint transparent glow */
+  border: 1px solid rgba(255, 255, 0, 0.4);
+  border-radius: 14px;
+  padding: 2px 8px;
+  margin: 2px 4px;
   font-weight: 700;
-  transition: background 0.2s, color 0.2s;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
 }
-.dangan-weak-btn:hover {
-  background: #1e1e1e;
-  color: #99cfff;
+.dangan-weak:hover {
+  background: rgba(255, 255, 0, 0.25);
+  box-shadow: 0 0 8px rgba(255, 255, 0, 0.6);
 }
 
 /* inline weakpoint highlight inside chat text */
