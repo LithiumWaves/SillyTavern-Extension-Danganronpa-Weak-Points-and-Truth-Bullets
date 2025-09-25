@@ -125,11 +125,27 @@ function insertBulletText(b) {
   const el = document.querySelector("#send_textarea");
   if (!el) {
     console.warn("Could not find #send_textarea");
-    return;
+    return false;
   }
   el.focus();
-  el.value = (el.value || "") + `Fired Truth Bullet: ${b.name}`; // Keep phrasing consistent 🥀🥀🥀
+
+  // Visible to player
+  const display = `Fired Truth Bullet: ${b.name}`;
+
+  // Hidden structured tag for AI/lorebook
+  const hidden = ` [DANGAN:TruthBullet="${b.name}"]`;
+
+  // Append both
+  el.value = (el.value || "") + display + hidden;
   el.dispatchEvent(new Event("input", { bubbles: true }));
+
+  // 🔍 Debug logging
+  console.log("[Dangan Trial] Bullet inserted:");
+  console.log("  Visible text ->", display);
+  console.log("  Hidden tag   ->", hidden);
+  console.log("  Final field value ->", el.value);
+
+  return true;
 }
 
 
