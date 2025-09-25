@@ -13,9 +13,11 @@
   }
   await waitForST();
 
-  // 🔹 Update Weak Point button style after AI verdict
-function updateWeakPointStatus(weakPoint, status) {
-  const wpSpans = document.querySelectorAll(`[data-wp="${weakPoint}"]`);
+// 🔹 Update Weak Point button style after AI verdict
+window.updateWeakPointStatus = function (weakPoint, status) {
+  const wpSpans = document.querySelectorAll(
+    `[data-wp="${CSS.escape(weakPoint)}"]`
+  );
   wpSpans.forEach((wp) => {
     if (status === "accepted") {
       wp.style.textDecoration = "line-through"; // strike
@@ -25,7 +27,7 @@ function updateWeakPointStatus(weakPoint, status) {
       wp.style.opacity = "0.5"; // gray
     }
   });
-}
+};
 
   // 🔹 Inject CSS once
   if (!document.getElementById("dangan-style")) {
