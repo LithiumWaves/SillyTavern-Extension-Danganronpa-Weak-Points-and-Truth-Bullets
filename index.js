@@ -462,25 +462,23 @@ n.querySelectorAll &&
   n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
     .forEach((child) => processRenderedMessageElement(child, entry));
 // After processing a new AI message, check for verdict markers
-if (entry?.mes?.includes("Truth Bullet - Accepted") || entry?.mes?.includes("Truth Bullet - Denied")) {
+const verdictText = n.innerText || entry?.mes || "";
+if (verdictText.includes("Truth Bullet - Accepted") || verdictText.includes("Truth Bullet - Denied")) {
   const lastTarget = ctx.chatMetadata?.dangan_last_target;
+  console.log("[Dangan Trial] Verdict detected in message:", verdictText, "Target:", lastTarget);
 
   if (lastTarget?.weakPoint) {
-    const wpSpans = document.querySelectorAll(
-      `[data-wp="${CSS.escape(lastTarget.weakPoint)}"]`
-    );
-
-    if (wpSpans.length === 0) {
-      console.warn("[Dangan Trial] No matching WeakPoint found for:", lastTarget.weakPoint);
+    if (verdictText.includes("Truth Bullet - Accepted")) {
+      updateWeakPointStatus(lastTarget.weakPoint, "accepted");
+    } else if (verdictText.includes("Truth Bullet - Denied")) {
+      updateWeakPointStatus(lastTarget.weakPoint, "denied");
     }
 
-    wpSpans.forEach((wp) => {
-      if (entry.mes.includes("Truth Bullet - Accepted")) {
-        updateWeakPointStatus(lastTarget.weakPoint, "accepted");
-      } else if (entry.mes.includes("Truth Bullet - Denied")) {
-        updateWeakPointStatus(lastTarget.weakPoint, "denied");
-      }
-    });
+    // Clear metadata after applying verdict so it doesn’t repeat
+    ctx.chatMetadata.dangan_last_target = null;
+    saveMetadata && saveMetadata();
+  }
+}
 
     // Clear metadata after applying verdict so it doesn’t repeat
     ctx.chatMetadata.dangan_last_target = null;
