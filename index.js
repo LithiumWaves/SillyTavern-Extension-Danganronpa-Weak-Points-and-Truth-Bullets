@@ -452,32 +452,37 @@
 
 if (eventSource && event_types) {
   console.log("[Dangan Trial] Hooking MESSAGE_SENT event...");
-  eventSource.on(event_types.MESSAGE_SENT, (payload) => {
+  eventSource.on(event_types.MESSAGE_SENT, (idx) => {
     try {
-      if (!payload?.message) return;
+      const chat = ctx.chat;
+      const entry = chat[idx];
+      const text = entry?.mes ?? "";
+      console.log("[Dangan Trial] MESSAGE_SENT fired:", { idx, text, entry });
 
-      if (payload.message.includes("Fired Truth Bullet:")) {
-        const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(payload.message);
+      if (text.includes("Fired Truth Bullet:")) {
+        const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(text);
         if (m) {
           const name = m[1].trim();
 
-          console.log("📩 Original outgoing (what user sees):", payload.message);
+          console.log("📩 Original outgoing (what user sees):", text);
 
           // What AI will see
           const aiMessage = `[DANGAN:TruthBullet="${name}"]`;
 
           // Store immersive text separately
-          payload.metadata = payload.metadata || {};
-          payload.metadata.dangan_display = payload.message;
+          entry.metadata = entry.metadata || {};
+          entry.metadata.dangan_display = text;
 
           // Rewrite message sent to AI
-          payload.message = aiMessage;
+          entry.mes = aiMessage;
 
-          console.log("🎭 Immersive shown in UI:", payload.metadata.dangan_display);
-          console.log("🔒 Sent to AI:", payload.message);
+          console.log("🎭 Immersive shown in UI:", entry.metadata.dangan_display);
+          console.log("🔒 Sent to AI:", entry.mes);
         } else {
           console.log("⚠️ Bullet marker found but regex failed to capture name.");
         }
+      } else {
+        console.log("❌ No Truth Bullet detected in message.");
       }
     } catch (err) {
       console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
