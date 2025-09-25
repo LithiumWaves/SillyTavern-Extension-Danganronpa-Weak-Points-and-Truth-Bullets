@@ -244,63 +244,97 @@
   }
 
   // 🔹 Click handler for highlights
+// 🔹 Click handler for highlights
 function handleWeakClick(btn) {
   if (!btn) return;
   const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
 
-    document.querySelectorAll(".dangan-weak-menu-floating").forEach((x) => x.remove());
+  // Remove any existing floating menus
+  document.querySelectorAll(".dangan-weak-menu-floating").forEach((x) => x.remove());
 
-    const menu = document.createElement("div");
-    menu.className = "dangan-weak-menu-floating dangan-panel";
-    menu.innerHTML = `<div style="color:#66aaff;font-weight:700;margin-bottom:6px;">Weak Point: ${desc}</div>
-      <div id="dangan-menu-bullets" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-      <div style="margin-top:6px;color:#aaa;font-size:12px;">Click a bullet to use it against this Weak Point.</div>`;
-    document.body.appendChild(menu);
+  // Create floating menu
+  const menu = document.createElement("div");
+  menu.className = "dangan-weak-menu-floating dangan-panel";
+  menu.innerHTML = `
+    <div style="color:#66aaff;font-weight:700;margin-bottom:6px;">
+      Weak Point: ${desc}
+    </div>
+    <div id="dangan-menu-bullets" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    <div style="margin-top:6px;color:#aaa;font-size:12px;">
+      Click a bullet to use it against this Weak Point.
+    </div>
+  `;
+  document.body.appendChild(menu);
 
-    const menuList = menu.querySelector("#dangan-menu-bullets");
-    const s = ensureSettings();
-    if (!s.bullets.length) {
-      menuList.innerHTML = `<div style="color:#bbb">No bullets available. Open Truth Bullets panel to add.</div>`;
-    } else {
-      s.bullets.forEach((b, idx) => {
-        const bbtn = document.createElement("button");
-        bbtn.className = "dangan-bullet-btn dangan-bullet-btn-styled";
-        bbtn.textContent = b.used ? `(used) ${b.name}` : b.name;
-        if (b.used) bbtn.disabled = true;
-        bbtn.addEventListener("click", (ev2) => {
-          ev2.stopPropagation();
-          if (b.used) return;
+  // Fill bullet list
+  const menuList = menu.querySelector("#dangan-menu-bullets");
+  const s = ensureSettings();
+  if (!s.bullets.length) {
+    menuList.innerHTML = `<div style="color:#bbb">No bullets available. Open Truth Bullets panel to add.</div>`;
+  } else {
+    s.bullets.forEach((b, idx) => {
+      const bbtn = document.createElement("button");
+      bbtn.className = "dangan-bullet-btn dangan-bullet-btn-styled";
+      bbtn.textContent = b.used ? `(used) ${b.name}` : b.name;
+      if (b.used) bbtn.disabled = true;
 
-          const selectors = [
-            "textarea",
-            "textarea.input-message",
-            "input[type=text]",
-            "#message",
-            ".chat-input textarea",
-          ];
-          for (const sel of selectors) {
-            const el = document.querySelector(sel);
-            if (el) {
-              el.focus();
-              try { el.value = `I use Truth Bullet: ${b.name} — `; } catch (e) {}
-              el.dispatchEvent(new Event("input", { bubbles: true }));
-              break;
-            }
+      bbtn.addEventListener("click", (ev2) => {
+        ev2.stopPropagation();
+        if (b.used) return;
+
+        // Insert bullet into message box
+        const selectors = [
+          "textarea",
+          "textarea.input-message",
+          "input[type=text]",
+          "#message",
+          ".chat-input textarea",
+        ];
+        for (const sel of selectors) {
+          const el = document.querySelector(sel);
+          if (el) {
+            el.focus();
+            try { el.value = `I use Truth Bullet: ${b.name} — `; } catch (e) {}
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+            break;
           }
-          s.bullets[idx].used = true;
-          saveSettingsDebounced();
-          const cont = document.querySelector("#dangan-panel-container");
-          if (cont) renderPanelContents(cont);
+        }
 
-          const md = SillyTavern.getContext().chatMetadata;
-          md["dangan_last_target"] = { weakPoint: desc, bullet: b.name, ts: Date.now() };
-          saveMetadata();
+        // Mark bullet used
+        s.bullets[idx].used = true;
+        saveSettingsDebounced();
+        const cont = document.querySelector("#dangan-panel-container");
+        if (cont) renderPanelContents(cont);
 
-          menu.remove();
-        });
-        menuList.appendChild(bbtn);
+        // Save metadata
+        const md = SillyTavern.getContext().chatMetadata;
+        md["dangan_last_target"] = { weakPoint: desc, bullet: b.name, ts: Date.now() };
+        saveMetadata();
+
+        menu.remove();
       });
+
+      menuList.appendChild(bbtn);
+    });
+  }
+
+  // Position the floating menu
+  const rect = btn.getBoundingClientRect();
+  const menuWidth = Math.min(320, window.innerWidth - 24);
+  menu.style.position = "fixed";
+  menu.style.zIndex = 9999; // ✅ keeps menu above chat
+  menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8)) + "px";
+  menu.style.top = rect.bottom + 8 + "px";
+
+  // Click outside closes it
+  const off = (e) => {
+    if (!menu.contains(e.target) && e.target !== btn) {
+      menu.remove();
+      window.removeEventListener("mousedown", off);
     }
+  };
+  window.addEventListener("mousedown", off);
+}
 
     const rect = btn.getBoundingClientRect();
     const menuWidth = Math.min(320, window.innerWidth - 24);
