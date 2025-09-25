@@ -475,13 +475,30 @@ if (text.includes("Fired Truth Bullet:")) {
   if (m) {
     const name = m[1].trim();
 
-    console.log("📩 Original outgoing (what user sees):", text);
+    // Keep a copy of the exact outgoing text for immersive UI display
+    entry.metadata = entry.metadata || {};
+    entry.metadata.dangan_display = text;
 
-// Show immersive text in UI
-entry.display_mes = text;
+    // IMPORTANT: Do NOT replace the actual outgoing message.
+    // Leave entry.mes as the literal "Fired Truth Bullet: <name>"
+    // so the model receives that exact string (no [DANGAN:...] token).
+    // If entry.mes is undefined (safety), set it explicitly:
+    if (typeof entry.mes === "undefined" || entry.mes === null) {
+      entry.mes = text;
+    }
 
-// Send clean token to AI
-entry.mes = `[DANGAN:TruthBullet="${name}"]`;
+    // Optionally log for debugging
+    console.log("[Dangan Trial] Fired Truth Bullet detected:", name);
+    console.log("[Dangan Trial] Outgoing preserved for AI:", entry.mes);
+    console.log("[Dangan Trial] UI immersive text stored:", entry.metadata.dangan_display);
+
+    // Update chat metadata (you already did similar elsewhere)
+    const md = SillyTavern.getContext().chatMetadata;
+    md["dangan_last_fired"] = { bullet: name, time: Date.now() };
+    saveMetadata && saveMetadata();
+
+  } else {
+    console.log("[Dangan Trial] Bullet marker found but regex failed to capture name.");
   }
 }
 
