@@ -146,28 +146,41 @@
           ev.stopPropagation();
           if (b.used) return;
 const selectors = [
-  "#chat-input",                  // modern ST input
+  "#chat-input",            // old contentEditable fallback
+  ".ProseMirror",           // ✅ new ST rich-text input
   "textarea",
   "textarea.input-message",
   "input[type=text]",
   "#message",
   ".chat-input textarea",
 ];
+
 for (const sel of selectors) {
   const el = document.querySelector(sel);
   if (el) {
     el.focus();
     try {
-      if (el.tagName === "DIV" && el.isContentEditable) {
-        el.textContent = `I use Truth Bullet: ${b.name} — `;
+      if (el.tagName === "DIV" && (el.isContentEditable || el.classList.contains("ProseMirror"))) {
+        // Insert text node for ProseMirror/editor-based input
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const selObj = window.getSelection();
+        selObj.removeAllRanges();
+        selObj.addRange(range);
+
+        document.execCommand("insertText", false, `I use Truth Bullet: ${b.name} — `);
       } else {
         el.value = `I use Truth Bullet: ${b.name} — `;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[Dangan Trial] Failed to insert bullet:", e);
+    }
     el.dispatchEvent(new Event("input", { bubbles: true }));
     break;
   }
 }
+
           s.bullets[idx].used = true;
           saveSettingsDebounced();
           renderPanelContents(container);
@@ -285,7 +298,8 @@ for (const sel of selectors) {
           if (b.used) return;
 
 const selectors = [
-  "#chat-input",                  // modern ST input
+  "#chat-input",            // old contentEditable fallback
+  ".ProseMirror",           // ✅ new ST rich-text input
   "textarea",
   "textarea.input-message",
   "input[type=text]",
@@ -298,16 +312,27 @@ for (const sel of selectors) {
   if (el) {
     el.focus();
     try {
-      if (el.tagName === "DIV" && el.isContentEditable) {
-        el.textContent = `I use Truth Bullet: ${b.name} — `;
+      if (el.tagName === "DIV" && (el.isContentEditable || el.classList.contains("ProseMirror"))) {
+        // Insert text node for ProseMirror/editor-based input
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const selObj = window.getSelection();
+        selObj.removeAllRanges();
+        selObj.addRange(range);
+
+        document.execCommand("insertText", false, `I use Truth Bullet: ${b.name} — `);
       } else {
         el.value = `I use Truth Bullet: ${b.name} — `;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[Dangan Trial] Failed to insert bullet:", e);
+    }
     el.dispatchEvent(new Event("input", { bubbles: true }));
     break;
   }
 }
+
 
 
           s.bullets[idx].used = true;
