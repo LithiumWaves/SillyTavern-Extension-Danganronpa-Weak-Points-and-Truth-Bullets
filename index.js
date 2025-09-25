@@ -228,7 +228,7 @@
 
   // 🔹 Inline highlight replacement
   function processRenderedMessageElement(el) {
-    if (!el || el.dataset?.danganProcessed) return;
+    if (!el) return; // temporarily ignore dataset check
     const inner = el.innerHTML || "";
     if (!inner.includes("[WeakPoint:")) {
       el.dataset.danganProcessed = "true";
