@@ -128,7 +128,7 @@ function insertBulletText(b) {
     return;
   }
   el.focus();
-  el.value = (el.value || "") + `I use Truth Bullet: ${b.name} — `;
+  el.value = (el.value || "") + `Fired Truth Bullet: ${b.name}`; // Keep phrasing consistent 🥀🥀🥀
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
@@ -449,7 +449,7 @@ function insertBulletText(b) {
       eventSource.on(event_types.MESSAGE_SENT, (payload) => {
         try {
           const msg = payload?.message || (payload && payload.content) || "";
-          const m = /I use Truth Bullet:\s*([^—\n\r]+)/i.exec(msg);
+          const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(msg); // Keep phrasing consistent 🥀🥀🥀
           if (m) {
             const name = m[1].trim();
             const s = ensureSettings();
