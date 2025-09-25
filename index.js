@@ -12,6 +12,7 @@
     });
   }
   await waitForST();
+  window.processRenderedMessageElement = processRenderedMessageElement;
 
   // 🔹 Inject CSS once
   if (!document.getElementById("dangan-style")) {
