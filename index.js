@@ -477,20 +477,15 @@ if (text.includes("Fired Truth Bullet:")) {
 
     console.log("📩 Original outgoing (what user sees):", text);
 
-    // Store immersive "Fired Truth Bullet" text for UI
-    entry.metadata = entry.metadata || {};
-    entry.metadata.dangan_display = text;
+// Show immersive text in UI
+entry.display_mes = text;
 
-    // What AI should see
-    const aiMessage = `[DANGAN:TruthBullet="${name}"]`;
-    entry.mes = text.replace(/Fired Truth Bullet:\s*([^—\n\r]+)/i, aiMessage);
-
-    console.log("🎭 Immersive shown in UI:", entry.metadata.dangan_display);
-    console.log("🔒 Sent to AI:", entry.mes);
-  } else {
-    console.log("⚠️ Bullet marker found but regex failed to capture name.");
+// Send clean token to AI
+entry.mes = `[DANGAN:TruthBullet="${name}"]`;
   }
 }
+
+
  } catch (err) {
       console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
     }
