@@ -226,17 +226,24 @@
   }
 
   // 🔹 Inline highlight replacement
-  function processRenderedMessageElement(el) {
-    if (!el) return; // temporarily ignore dataset check
-    const inner = el.innerHTML || "";
-    if (!inner.includes("[WeakPoint:")) {
-      el.dataset.danganProcessed = "true";
-      return;
-    }
-    const replaced = inner.replace(/\[WeakPoint:(.*?)\]/g, (m, p1) => {
-      const desc = p1.trim().replace(/"/g, "&quot;");
-      return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
-    });
+function processRenderedMessageElement(el) {
+  if (!el) return;
+  const inner = el.innerHTML || "";
+  if (!inner.includes("[WeakPoint:]")) {
+    el.dataset.danganProcessed = "true";
+    return;
+  }
+  const replaced = inner.replace(/\[WeakPoint:(.*?)\]/g, (m, p1) => {
+    const desc = p1.trim().replace(/"/g, "&quot;");
+    return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
+  });
+  try {
+    el.innerHTML = replaced;
+  } catch (e) {
+    console.warn("[Dangan Trial] failed to replace WP token", e);
+  }
+  el.dataset.danganProcessed = "true";
+}
     try { el.innerHTML = replaced; } catch (e) {
       console.warn("[Dangan Trial] failed to replace WP token", e);
     }
