@@ -109,7 +109,6 @@
   } = ctx;
 
   const MODULE_KEY = "dangan_trial_toggle";
-
   const defaultSettings = { bullets: [] };
 
   function ensureSettings() {
@@ -225,123 +224,96 @@
     }
   }
 
-  // 🔹 Inline highlight replacement
-function processRenderedMessageElement(el) {
-  if (!el) return;
-  const inner = el.innerHTML || "";
-  if (!inner.includes("[WeakPoint:]")) {
-    el.dataset.danganProcessed = "true";
-    return;
-  }
-  const replaced = inner.replace(/\[WeakPoint:(.*?)\]/g, (m, p1) => {
-    const desc = p1.trim().replace(/"/g, "&quot;");
-    return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
-  });
-  try {
-    el.innerHTML = replaced;
-  } catch (e) {
-    console.warn("[Dangan Trial] failed to replace WP token", e);
-  }
-  el.dataset.danganProcessed = "true";
-}
-    try { el.innerHTML = replaced; } catch (e) {
+  // --------------------- FIXED FUNCTION ---------------------
+  function processRenderedMessageElement(el) {
+    if (!el) return;
+    if (el.dataset?.danganProcessed) return;
+
+    const inner = el.innerHTML || "";
+    if (!/\[WeakPoint:.*?\]/.test(inner)) {
+      el.dataset.danganProcessed = "true";
+      return;
+    }
+
+    const replaced = inner.replace(/\[WeakPoint:(.*?)\]/g, (m, p1) => {
+      const desc = p1.trim().replace(/"/g, "&quot;");
+      return `<span class="dangan-weak-highlight" data-wp="${desc}" role="button" tabindex="0">${desc}</span>`;
+    });
+
+    try {
+      el.innerHTML = replaced;
+    } catch (e) {
       console.warn("[Dangan Trial] failed to replace WP token", e);
     }
+
     el.dataset.danganProcessed = "true";
   }
+  // ------------------- END FIXED FUNCTION ------------------
 
-  // 🔹 Click handler for highlights
-// 🔹 Click handler for highlights
-function handleWeakClick(btn) {
-  if (!btn) return;
-  const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
+  // --------------------- FIXED FUNCTION ---------------------
+  function handleWeakClick(btn) {
+    if (!btn) return;
+    const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
 
-  // Remove any existing floating menus
-  document.querySelectorAll(".dangan-weak-menu-floating").forEach((x) => x.remove());
+    document.querySelectorAll(".dangan-weak-menu-floating").forEach((x) => x.remove());
 
-  // Create floating menu
-  const menu = document.createElement("div");
-  menu.className = "dangan-weak-menu-floating dangan-panel";
-  menu.innerHTML = `
-    <div style="color:#66aaff;font-weight:700;margin-bottom:6px;">
-      Weak Point: ${desc}
-    </div>
-    <div id="dangan-menu-bullets" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-    <div style="margin-top:6px;color:#aaa;font-size:12px;">
-      Click a bullet to use it against this Weak Point.
-    </div>
-  `;
-  document.body.appendChild(menu);
+    const menu = document.createElement("div");
+    menu.className = "dangan-weak-menu-floating dangan-panel";
+    menu.style.zIndex = 100001;
+    menu.innerHTML = `
+      <div style="color:#66aaff;font-weight:700;margin-bottom:6px;">Weak Point: ${desc}</div>
+      <div id="dangan-menu-bullets" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <div style="margin-top:6px;color:#aaa;font-size:12px;">Click a bullet to use it against this Weak Point.</div>
+    `;
+    document.body.appendChild(menu);
 
-  // Fill bullet list
-  const menuList = menu.querySelector("#dangan-menu-bullets");
-  const s = ensureSettings();
-  if (!s.bullets.length) {
-    menuList.innerHTML = `<div style="color:#bbb">No bullets available. Open Truth Bullets panel to add.</div>`;
-  } else {
-    s.bullets.forEach((b, idx) => {
-      const bbtn = document.createElement("button");
-      bbtn.className = "dangan-bullet-btn dangan-bullet-btn-styled";
-      bbtn.textContent = b.used ? `(used) ${b.name}` : b.name;
-      if (b.used) bbtn.disabled = true;
+    const menuList = menu.querySelector("#dangan-menu-bullets");
+    const s = ensureSettings();
+    if (!s.bullets.length) {
+      menuList.innerHTML = `<div style="color:#bbb">No bullets available. Open Truth Bullets panel to add.</div>`;
+    } else {
+      s.bullets.forEach((b, idx) => {
+        const bbtn = document.createElement("button");
+        bbtn.className = "dangan-bullet-btn dangan-bullet-btn-styled";
+        bbtn.textContent = b.used ? `(used) ${b.name}` : b.name;
+        if (b.used) bbtn.disabled = true;
 
-      bbtn.addEventListener("click", (ev2) => {
-        ev2.stopPropagation();
-        if (b.used) return;
+        bbtn.addEventListener("click", (ev2) => {
+          ev2.stopPropagation();
+          if (b.used) return;
 
-        // Insert bullet into message box
-        const selectors = [
-          "textarea",
-          "textarea.input-message",
-          "input[type=text]",
-          "#message",
-          ".chat-input textarea",
-        ];
-        for (const sel of selectors) {
-          const el = document.querySelector(sel);
-          if (el) {
-            el.focus();
-            try { el.value = `I use Truth Bullet: ${b.name} — `; } catch (e) {}
-            el.dispatchEvent(new Event("input", { bubbles: true }));
-            break;
+          const selectors = [
+            "textarea",
+            "textarea.input-message",
+            "input[type=text]",
+            "#message",
+            ".chat-input textarea",
+          ];
+          for (const sel of selectors) {
+            const el = document.querySelector(sel);
+            if (el) {
+              el.focus();
+              try { el.value = `I use Truth Bullet: ${b.name} — `; } catch (e) {}
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              break;
+            }
           }
-        }
 
-        // Mark bullet used
-        s.bullets[idx].used = true;
-        saveSettingsDebounced();
-        const cont = document.querySelector("#dangan-panel-container");
-        if (cont) renderPanelContents(cont);
+          s.bullets[idx].used = true;
+          saveSettingsDebounced();
+          const cont = document.querySelector("#dangan-panel-container");
+          if (cont) renderPanelContents(cont);
 
-        // Save metadata
-        const md = SillyTavern.getContext().chatMetadata;
-        md["dangan_last_target"] = { weakPoint: desc, bullet: b.name, ts: Date.now() };
-        saveMetadata();
+          const md = SillyTavern.getContext().chatMetadata;
+          md["dangan_last_target"] = { weakPoint: desc, bullet: b.name, ts: Date.now() };
+          saveMetadata();
 
-        menu.remove();
+          menu.remove();
+        });
+
+        menuList.appendChild(bbtn);
       });
-
-      menuList.appendChild(bbtn);
-    });
-  }
-
-  // Position the floating menu
-  const rect = btn.getBoundingClientRect();
-  const menuWidth = Math.min(320, window.innerWidth - 24);
-  menu.style.position = "fixed";
-  menu.style.zIndex = 9999; // ✅ keeps menu above chat
-  menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8)) + "px";
-  menu.style.top = rect.bottom + 8 + "px";
-
-  // Click outside closes it
-  const off = (e) => {
-    if (!menu.contains(e.target) && e.target !== btn) {
-      menu.remove();
-      window.removeEventListener("mousedown", off);
     }
-  };
-  window.addEventListener("mousedown", off);
-}
 
     const rect = btn.getBoundingClientRect();
     const menuWidth = Math.min(320, window.innerWidth - 24);
@@ -357,6 +329,7 @@ function handleWeakClick(btn) {
     };
     window.addEventListener("mousedown", off);
   }
+  // ------------------- END FIXED FUNCTION ------------------
 
   function patchWandMenu() {
     const menu = document.querySelector("#extensionsMenu");
@@ -469,9 +442,7 @@ function handleWeakClick(btn) {
         if (m.addedNodes && m.addedNodes.length) {
           m.addedNodes.forEach((n) => {
             if (n.nodeType === 1) {
-              // ✅ Process node itself
               processRenderedMessageElement(n);
-              // ✅ Process eligible children
               n.querySelectorAll &&
                 n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
                   .forEach(processRenderedMessageElement);
@@ -482,14 +453,13 @@ function handleWeakClick(btn) {
     });
     mo.observe(chatRoot, { childList: true, subtree: true });
 
-    // ✅ Use closest instead of matches
-document.addEventListener("click", (ev) => {
-  const wp = ev.target.closest(".dangan-weak-highlight");
-  if (wp) {
-    ev.stopPropagation();
-    handleWeakClick(wp); // pass the element directly
-  }
-});
+    document.addEventListener("click", (ev) => {
+      const wp = ev.target.closest(".dangan-weak-highlight");
+      if (wp) {
+        ev.stopPropagation();
+        handleWeakClick(wp);
+      }
+    });
     
     eventSource.on(event_types.MESSAGE_SENT, (payload) => {
       try {
@@ -520,5 +490,5 @@ document.addEventListener("click", (ev) => {
     setupExtension();
   }, 500);
 
-  console.log("[Dangan Trial] Wand Menu beside/floating panel loaded with CSS styling");
+  console.log("[Dangan Trial] Wand Menu beside/floating panel loaded");
 })();
