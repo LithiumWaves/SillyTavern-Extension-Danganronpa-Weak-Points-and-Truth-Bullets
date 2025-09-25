@@ -263,7 +263,7 @@ for (const sel of selectors) {
     `;
     document.body.appendChild(menu);
 
-    // ✅ Force visibility so it doesn’t inherit hidden state
+    // Force visibility so it doesn’t inherit hidden state
     menu.style.display = "block";
     menu.style.visibility = "visible";
     menu.style.opacity = "1";
@@ -284,22 +284,31 @@ for (const sel of selectors) {
           ev2.stopPropagation();
           if (b.used) return;
 
-          const selectors = [
-            "textarea",
-            "textarea.input-message",
-            "input[type=text]",
-            "#message",
-            ".chat-input textarea",
-          ];
-          for (const sel of selectors) {
-            const el = document.querySelector(sel);
-            if (el) {
-              el.focus();
-              try { el.value = `I use Truth Bullet: ${b.name} — `; } catch (e) {}
-              el.dispatchEvent(new Event("input", { bubbles: true }));
-              break;
-            }
-          }
+const selectors = [
+  "#chat-input",                  // modern ST input
+  "textarea",
+  "textarea.input-message",
+  "input[type=text]",
+  "#message",
+  ".chat-input textarea",
+];
+
+for (const sel of selectors) {
+  const el = document.querySelector(sel);
+  if (el) {
+    el.focus();
+    try {
+      if (el.tagName === "DIV" && el.isContentEditable) {
+        el.textContent = `I use Truth Bullet: ${b.name} — `;
+      } else {
+        el.value = `I use Truth Bullet: ${b.name} — `;
+      }
+    } catch (e) {}
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    break;
+  }
+}
+
 
           s.bullets[idx].used = true;
           saveSettingsDebounced();
