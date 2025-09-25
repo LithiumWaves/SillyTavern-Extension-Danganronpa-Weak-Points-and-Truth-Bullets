@@ -13,6 +13,74 @@
   }
   await waitForST();
 
+  // 🔹 Inject CSS once
+  if (!document.getElementById("dangan-style")) {
+    const style = document.createElement("style");
+    style.id = "dangan-style";
+    style.textContent = `
+      /* Floating panel */
+      .dangan-panel {
+        padding: 12px;
+        background: #2b2b2b; /* dark grey */
+        border: 2px solid #003366; /* dark blue outline */
+        border-radius: 50px; /* bullet-like */
+        max-height: 70vh;
+        overflow-y: auto;
+        color: #e0e0e0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+        width: 260px;
+      }
+      .dangan-panel .d-header h4 {
+        margin: 0;
+        color: #66aaff;
+        text-align: center;
+      }
+
+      /* Bullet buttons */
+      .dangan-bullet-btn-styled {
+        background: #2b2b2b;
+        border: 1px solid #003366;
+        border-radius: 20px;
+        padding: 6px 12px;
+        color: #66aaff;
+        cursor: pointer;
+        margin: 4px;
+      }
+      .dangan-bullet-btn-styled:disabled {
+        color: #777;
+        cursor: not-allowed;
+        border-color: #444;
+      }
+
+      /* Input row */
+      #dangan-add-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 12px;
+      }
+      #dangan-add-input {
+        flex: 1;
+        min-width: 140px;
+        background: #1e1e1e;
+        border: 1px solid #003366;
+        border-radius: 20px;
+        padding: 6px 10px;
+        color: #e0e0e0;
+      }
+      #dangan-add-btn {
+        background: #2b2b2b;
+        border: 1px solid #003366;
+        border-radius: 20px;
+        padding: 6px 12px;
+        color: #66aaff;
+        cursor: pointer;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   const ctx = SillyTavern.getContext();
   const {
     eventSource,
@@ -25,9 +93,7 @@
 
   const MODULE_KEY = "dangan_trial_toggle";
 
-  const defaultSettings = {
-    bullets: [],
-  };
+  const defaultSettings = { bullets: [] };
 
   function ensureSettings() {
     if (!extensionSettings[MODULE_KEY]) {
@@ -55,7 +121,7 @@
     } else {
       s.bullets.forEach((b, idx) => {
         const btn = document.createElement("button");
-        btn.className = "dangan-bullet-btn";
+        btn.className = "dangan-bullet-btn dangan-bullet-btn-styled";
         if (b.used) {
           btn.classList.add("used");
           btn.disabled = true;
@@ -96,7 +162,6 @@
     const addBtn = container.querySelector("#dangan-add-btn");
     const addInput = container.querySelector("#dangan-add-input");
     if (addBtn && addInput) {
-      // prevent wand collapse when interacting
       addBtn.addEventListener("click", (ev) => ev.stopPropagation());
       addInput.addEventListener("click", (ev) => ev.stopPropagation());
       addInput.addEventListener("keydown", (ev) => ev.stopPropagation());
@@ -124,7 +189,7 @@
     }
     const replaced = inner.replace(/\[WeakPoint:(.*?)\]/g, (m, p1) => {
       const desc = p1.trim().replace(/"/g, "&quot;");
-      return `<button class="dangan-weak-btn" data-wp="${desc}">Weak Point: ${desc}</button>`;
+      return `<button class="dangan-weak-btn dangan-bullet-btn-styled" data-wp="${desc}">Weak Point: ${desc}</button>`;
     });
     try { el.innerHTML = replaced; } catch (e) {
       console.warn("[Dangan Trial] failed to replace WP token", e);
@@ -140,8 +205,8 @@
     document.querySelectorAll(".dangan-weak-menu-floating").forEach((x) => x.remove());
 
     const menu = document.createElement("div");
-    menu.className = "dangan-weak-menu-floating";
-    menu.innerHTML = `<div style="color:#ffeb7a;font-weight:700;margin-bottom:6px;">Weak Point: ${desc}</div>
+    menu.className = "dangan-weak-menu-floating dangan-panel";
+    menu.innerHTML = `<div style="color:#66aaff;font-weight:700;margin-bottom:6px;">Weak Point: ${desc}</div>
       <div id="dangan-menu-bullets" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
       <div style="margin-top:6px;color:#aaa;font-size:12px;">Click a bullet to use it against this Weak Point.</div>`;
     document.body.appendChild(menu);
@@ -153,7 +218,7 @@
     } else {
       s.bullets.forEach((b, idx) => {
         const bbtn = document.createElement("button");
-        bbtn.className = "dangan-bullet-btn";
+        bbtn.className = "dangan-bullet-btn dangan-bullet-btn-styled";
         bbtn.textContent = b.used ? `(used) ${b.name}` : b.name;
         if (b.used) bbtn.disabled = true;
         bbtn.addEventListener("click", (ev2) => {
@@ -193,6 +258,7 @@
 
     const rect = btn.getBoundingClientRect();
     const menuWidth = Math.min(320, window.innerWidth - 24);
+    menu.style.position = "fixed";
     menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8)) + "px";
     menu.style.top = rect.bottom + 8 + "px";
 
@@ -205,7 +271,6 @@
     window.addEventListener("mousedown", off);
   }
 
-  // NEW: floating panel placed next to wand entry (appended to body)
   function patchWandMenu() {
     const menu = document.querySelector("#extensionsMenu");
     if (!menu) {
@@ -215,7 +280,6 @@
     }
     if (document.getElementById("dangan_wand_container")) return;
 
-    // create wand entry inside menu (so it appears with other items)
     const container = document.createElement("div");
     container.id = "dangan_wand_container";
     container.className = "extension_container interactable";
@@ -230,76 +294,48 @@
     container.appendChild(entry);
     menu.appendChild(container);
 
-    // create floating panel appended to body (not inside menu) so it's never clipped
-    if (document.getElementById("dangan-panel-container")) {
-      // if already present, reuse
-      return;
-    }
+    if (document.getElementById("dangan-panel-container")) return;
     const panel = document.createElement("div");
     panel.id = "dangan-panel-container";
+    panel.className = "dangan-panel";
     panel.style.display = "none";
-    panel.style.position = "fixed";
-    panel.style.background = "#fffbe8";
-    panel.style.border = "2px solid #ffd14a";
-    panel.style.borderRadius = "6px";
-    panel.style.padding = "8px";
-    panel.style.maxHeight = "70vh";
-    panel.style.overflowY = "auto";
-    panel.style.boxShadow = "0 6px 18px rgba(0,0,0,0.25)";
-    panel.style.zIndex = "100000";
-    panel.style.width = "260px";
 
     panel.innerHTML = `
-      <div class="d-header">
-        <h4 style="margin:0;">Dangan Trial — Truth Bullets</h4>
-      </div>
-      <div id="dangan-bullet-list" style="margin-top:6px;"></div>
-      <div id="dangan-add-row" style="margin-top:8px;display:flex;gap:4px;">
-        <input id="dangan-add-input" placeholder="New bullet name..." style="flex:1;" />
+      <div class="d-header"><h4>Dangan Trial — Truth Bullets</h4></div>
+      <div id="dangan-bullet-list"></div>
+      <div id="dangan-add-row">
+        <input id="dangan-add-input" placeholder="New bullet name..." />
         <button id="dangan-add-btn">Add</button>
       </div>
     `;
 
-    // prevent clicks inside from closing (we'll close on outside clicks)
     panel.addEventListener("click", (e) => e.stopPropagation());
-
     document.body.appendChild(panel);
 
-    // toggling & positioning
     function showHidePanel() {
       const visible = panel.style.display === "block";
       if (visible) {
         panel.style.display = "none";
         return;
       }
-      // render contents then position
       renderPanelContents(panel);
       panel.style.visibility = "hidden";
       panel.style.display = "block";
 
-      // ensure width is set (already 260px) — compute position based on entry rect
       requestAnimationFrame(() => {
         const rect = entry.getBoundingClientRect();
         const pad = 8;
         const pw = Math.min(panel.offsetWidth || 260, Math.min(window.innerWidth - 16, 320));
         panel.style.width = pw + "px";
 
-        // prefer right
         let left = rect.right + pad;
-        if (left + pw > window.innerWidth - 8) {
-          // not enough space on right -> place to the left of entry
-          left = rect.left - pw - pad;
-        }
-        // clamp into viewport
+        if (left + pw > window.innerWidth - 8) left = rect.left - pw - pad;
         left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
 
-        // top: try align top of entry, but clamp to viewport
         let top = rect.top;
         if (top + panel.offsetHeight > window.innerHeight - 8) {
           top = Math.max(8, window.innerHeight - panel.offsetHeight - 8);
         }
-        top = Math.max(8, top);
-
         panel.style.left = Math.round(left) + "px";
         panel.style.top = Math.round(top) + "px";
         panel.style.visibility = "visible";
@@ -311,18 +347,14 @@
       showHidePanel();
     });
 
-    // close on outside click
-    const outsideClose = (e) => {
+    document.addEventListener("mousedown", (e) => {
       if (!panel.contains(e.target) && e.target !== entry) {
         panel.style.display = "none";
       }
-    };
-    document.addEventListener("mousedown", outsideClose);
+    });
 
-    // reposition on resize
     window.addEventListener("resize", () => {
       if (panel.style.display === "block") {
-        // reposition relative to entry
         const rect = entry.getBoundingClientRect();
         const pw = Math.min(panel.offsetWidth || 260, Math.min(window.innerWidth - 16, 320));
         let left = rect.right + 8;
@@ -335,7 +367,7 @@
       }
     });
 
-    console.log("[Dangan Trial] Wand entry injected (floating panel appended to body)");
+    console.log("[Dangan Trial] Wand entry injected (floating panel beside wand)");
   }
 
   function setupExtension() {
@@ -395,5 +427,5 @@
     setupExtension();
   }, 500);
 
-  console.log("[Dangan Trial] Wand Menu beside/floating panel loaded");
+  console.log("[Dangan Trial] Wand Menu beside/floating panel loaded with CSS styling");
 })();
