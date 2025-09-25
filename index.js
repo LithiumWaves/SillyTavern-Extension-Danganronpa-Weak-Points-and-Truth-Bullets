@@ -450,27 +450,27 @@
     });
   }
 
-  // 🔹 MESSAGE_SENT hook (outside setupExtension!)
-  if (eventSource && event_types) {
-    eventSource.on(event_types.MESSAGE_SENT, (payload) => {
-      try {
-        if (!payload?.message) return;
-        if (payload.message.includes("Fired Truth Bullet:")) {
-          const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(payload.message);
-          if (m) {
-            const name = m[1].trim();
-            console.log("📩 Before injection:", payload.message);
-            payload.message += ` [DANGAN:TruthBullet="${name}"]`;
-            console.log("🔒 After injection (with hidden tag):", payload.message);
-          }
+if (eventSource && event_types) {
+  console.log("[Dangan Trial] Hooking MESSAGE_SENT event...");
+  eventSource.on(event_types.MESSAGE_SENT, (payload) => {
+    try {
+      if (!payload?.message) return;
+      if (payload.message.includes("Fired Truth Bullet:")) {
+        const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(payload.message);
+        if (m) {
+          const name = m[1].trim();
+          console.log("📩 Before injection:", payload.message);
+          payload.message += ` [DANGAN:TruthBullet="${name}"]`;
+          console.log("🔒 After injection (with hidden tag):", payload.message);
         }
-      } catch (err) {
-        console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
       }
-    });
-  } else {
-    console.warn
-  }
+    } catch (err) {
+      console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
+    }
+  });
+} else {
+  console.warn("[Dangan Trial] eventSource or event_types missing — cannot hook MESSAGE_SENT!");
+}
 
   // 🔹 Init
   setTimeout(() => {
