@@ -244,10 +244,9 @@
   }
 
   // 🔹 Click handler for highlights
-  function handleWeakClick(ev) {
-    const btn = ev.target.closest(".dangan-weak-highlight");
-    if (!btn) return;
-    const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
+function handleWeakClick(btn) {
+  if (!btn) return;
+  const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
 
     document.querySelectorAll(".dangan-weak-menu-floating").forEach((x) => x.remove());
 
@@ -443,11 +442,14 @@
     mo.observe(chatRoot, { childList: true, subtree: true });
 
     // ✅ Use closest instead of matches
-    document.addEventListener("click", (ev) => {
-      const wp = ev.target.closest(".dangan-weak-highlight");
-      if (wp) handleWeakClick(ev);
-    });
-
+ document.addEventListener("click", (ev) => {
+  const wp = ev.target.closest(".dangan-weak-highlight");
+  if (wp) {
+    ev.stopPropagation();
+    handleWeakClick(wp); // pass the element directly
+  }
+});
+    
     eventSource.on(event_types.MESSAGE_SENT, (payload) => {
       try {
         const msg = payload?.message || (payload && payload.content) || "";
