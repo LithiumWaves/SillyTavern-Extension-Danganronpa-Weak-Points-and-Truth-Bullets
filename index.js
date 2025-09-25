@@ -479,12 +479,6 @@ if (verdictText.includes("Truth Bullet - Accepted") || verdictText.includes("Tru
     saveMetadata && saveMetadata();
   }
 }
-
-    // Clear metadata after applying verdict so it doesn’t repeat
-    ctx.chatMetadata.dangan_last_target = null;
-    saveMetadata && saveMetadata();
-  }
-}
             }
           });
         }
