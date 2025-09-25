@@ -13,6 +13,20 @@
   }
   await waitForST();
 
+  // 🔹 Update Weak Point button style after AI verdict
+function updateWeakPointStatus(weakPoint, status) {
+  const wpSpans = document.querySelectorAll(`[data-wp="${weakPoint}"]`);
+  wpSpans.forEach((wp) => {
+    if (status === "accepted") {
+      wp.style.textDecoration = "line-through"; // strike
+      wp.style.opacity = "1";
+    } else if (status === "denied") {
+      wp.style.textDecoration = "none";
+      wp.style.opacity = "0.5"; // gray
+    }
+  });
+}
+
   // 🔹 Inject CSS once
   if (!document.getElementById("dangan-style")) {
     const style = document.createElement("style");
@@ -449,16 +463,14 @@ n.querySelectorAll &&
 if (entry?.mes?.includes("Truth Bullet - Accepted") || entry?.mes?.includes("Truth Bullet - Denied")) {
   const lastTarget = ctx.chatMetadata?.dangan_last_target;
   if (lastTarget?.weakPoint) {
-    const wpSpans = document.querySelectorAll(`[data-wp="${lastTarget.weakPoint}"]`);
-    wpSpans.forEach((wp) => {
-      if (entry.mes.includes("Truth Bullet - Accepted")) {
-        wp.classList.add("dangan-weak-accepted");
-      } else if (entry.mes.includes("Truth Bullet - Denied")) {
-        wp.classList.add("dangan-weak-denied");
-      }
-    });
+    if (entry.mes.includes("Truth Bullet - Accepted")) {
+      updateWeakPointStatus(lastTarget.weakPoint, "accepted");
+    } else if (entry.mes.includes("Truth Bullet - Denied")) {
+      updateWeakPointStatus(lastTarget.weakPoint, "denied");
+    }
   }
 }
+
             }
           });
         }
