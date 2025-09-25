@@ -442,7 +442,7 @@ function handleWeakClick(btn) {
     mo.observe(chatRoot, { childList: true, subtree: true });
 
     // ✅ Use closest instead of matches
- document.addEventListener("click", (ev) => {
+document.addEventListener("click", (ev) => {
   const wp = ev.target.closest(".dangan-weak-highlight");
   if (wp) {
     ev.stopPropagation();
