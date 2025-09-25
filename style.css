@@ -124,3 +124,14 @@
   background: #1e1e1e;
   color: #99cfff;
 }
+
+/* inline weakpoint highlight inside chat text */
+.dangan-weak {
+  color: yellow;
+  background: transparent;
+  font-weight: 700;   /* optional, makes it pop more */
+  cursor: pointer;    /* so it still feels interactive */
+}
+.dangan-weak:hover {
+  text-shadow: 0 0 6px rgba(255, 255, 0, 0.8);
+}
