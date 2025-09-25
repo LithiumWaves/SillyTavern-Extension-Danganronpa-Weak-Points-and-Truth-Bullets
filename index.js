@@ -80,11 +80,18 @@
 
       /* Weak Point highlights */
       .dangan-weak-highlight {
-        background: yellow;
-        color: black;
-        padding: 0 2px;
-        border-radius: 3px;
+        display: inline-block;
+        padding: 0 4px;
+        color: yellow;
+        background: transparent;
+        border: none;
+        font-weight: bold;
         cursor: pointer;
+        transition: color 0.2s, text-shadow 0.2s;
+      }
+      .dangan-weak-highlight:hover {
+        color: #fff200; /* brighter yellow */
+        text-shadow: 0 0 6px rgba(255, 255, 0, 0.8);
       }
     `;
     document.head.appendChild(style);
