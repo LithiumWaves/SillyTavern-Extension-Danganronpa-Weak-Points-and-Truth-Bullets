@@ -421,8 +421,9 @@
   function setupExtension() {
     patchWandMenu();
 
-    document.querySelectorAll(".mes_text, .message .text, .character-message .mes_text")
-      .forEach(processRenderedMessageElement);
+    document.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
+  .forEach(processRenderedMessageElement);
+
 
     const chatRoot = document.querySelector("#chat") || document.body;
     const mo = new MutationObserver((mutations) => {
