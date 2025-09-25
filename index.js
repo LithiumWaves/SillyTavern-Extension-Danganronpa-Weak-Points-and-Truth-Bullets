@@ -442,10 +442,9 @@
     mo.observe(chatRoot, { childList: true, subtree: true });
 
     document.addEventListener("click", (ev) => {
-      if (ev.target && ev.target.matches && ev.target.matches(".dangan-weak-highlight")) {
-        handleWeakClick(ev);
-      }
-    });
+  const wp = ev.target.closest(".dangan-weak-highlight");
+  if (wp) handleWeakClick(ev);
+});
 
     eventSource.on(event_types.MESSAGE_SENT, (payload) => {
       try {
