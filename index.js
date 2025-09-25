@@ -77,6 +77,15 @@
         color: #66aaff;
         cursor: pointer;
       }
+
+      /* Weak Point highlights */
+      .dangan-weak-highlight {
+        background: yellow;
+        color: black;
+        padding: 0 2px;
+        border-radius: 3px;
+        cursor: pointer;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -208,7 +217,7 @@
     }
   }
 
-
+  // 🔹 Inline highlight replacement
   function processRenderedMessageElement(el) {
     if (!el || el.dataset?.danganProcessed) return;
     const inner = el.innerHTML || "";
@@ -218,7 +227,7 @@
     }
     const replaced = inner.replace(/\[WeakPoint:(.*?)\]/g, (m, p1) => {
       const desc = p1.trim().replace(/"/g, "&quot;");
-      return `<button class="dangan-weak-btn dangan-bullet-btn-styled" data-wp="${desc}">Weak Point: ${desc}</button>`;
+      return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
     });
     try { el.innerHTML = replaced; } catch (e) {
       console.warn("[Dangan Trial] failed to replace WP token", e);
@@ -226,8 +235,9 @@
     el.dataset.danganProcessed = "true";
   }
 
+  // 🔹 Click handler for highlights
   function handleWeakClick(ev) {
-    const btn = ev.target.closest(".dangan-weak-btn");
+    const btn = ev.target.closest(".dangan-weak-highlight");
     if (!btn) return;
     const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
 
@@ -422,7 +432,7 @@
     mo.observe(chatRoot, { childList: true, subtree: true });
 
     document.addEventListener("click", (ev) => {
-      if (ev.target && ev.target.matches && ev.target.matches(".dangan-weak-btn")) {
+      if (ev.target && ev.target.matches && ev.target.matches(".dangan-weak-highlight")) {
         handleWeakClick(ev);
       }
     });
