@@ -120,8 +120,14 @@
       listEl.innerHTML = `<div style="color:#aaa;padding:8px 2px;">No Truth Bullets. Add one below.</div>`;
     } else {
       s.bullets.forEach((b, idx) => {
+        const wrapper = document.createElement("div");
+        wrapper.style.display = "flex";
+        wrapper.style.alignItems = "center";
+        wrapper.style.gap = "6px";
+        wrapper.style.margin = "4px 0";
+
         const btn = document.createElement("button");
-        btn.className = "dangan-bullet-btn dangan-bullet-btn-styled";
+        btn.className = "dangan-bullet-btn";
         if (b.used) {
           btn.classList.add("used");
           btn.disabled = true;
@@ -155,7 +161,29 @@
           md["dangan_last_fired"] = { bullet: b.name, time: Date.now() };
           saveMetadata();
         });
-        listEl.appendChild(btn);
+
+        wrapper.appendChild(btn);
+
+        if (b.used) {
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "✖";
+          removeBtn.style.background = "transparent";
+          removeBtn.style.border = "none";
+          removeBtn.style.color = "#f55";
+          removeBtn.style.cursor = "pointer";
+          removeBtn.style.fontWeight = "bold";
+
+          removeBtn.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            s.bullets.splice(idx, 1);
+            saveSettingsDebounced();
+            renderPanelContents(container);
+          });
+
+          wrapper.appendChild(removeBtn);
+        }
+
+        listEl.appendChild(wrapper);
       });
     }
 
@@ -179,6 +207,7 @@
       });
     }
   }
+
 
   function processRenderedMessageElement(el) {
     if (!el || el.dataset?.danganProcessed) return;
