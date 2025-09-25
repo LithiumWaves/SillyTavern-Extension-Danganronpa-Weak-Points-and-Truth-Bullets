@@ -129,25 +129,14 @@ function insertBulletText(b) {
   }
   el.focus();
 
-  // Visible to player
+  // Just visible text
   const display = `Fired Truth Bullet: ${b.name}`;
-
-  // Hidden structured tag for AI/lorebook
-  const hidden = ` [DANGAN:TruthBullet="${b.name}"]`;
-
-  // Append both
-  el.value = (el.value || "") + display + hidden;
+  el.value = (el.value || "") + display;
   el.dispatchEvent(new Event("input", { bubbles: true }));
 
-  // 🔍 Debug logging
-  console.log("[Dangan Trial] Bullet inserted:");
-  console.log("  Visible text ->", display);
-  console.log("  Hidden tag   ->", hidden);
-  console.log("  Final field value ->", el.value);
-
+  console.log("[Dangan Trial] Bullet inserted:", display);
   return true;
 }
-
 
   function renderPanelContents(container) {
     ensureSettings();
@@ -461,29 +450,23 @@ function insertBulletText(b) {
       }
     });
 
-    if (eventSource && event_types) {
-      eventSource.on(event_types.MESSAGE_SENT, (payload) => {
-        try {
-          const msg = payload?.message || (payload && payload.content) || "";
-          const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(msg); // Keep phrasing consistent 🥀🥀🥀
-          if (m) {
-            const name = m[1].trim();
-            const s = ensureSettings();
-            const idx = s.bullets.findIndex(
-              (b) => b.name.toLowerCase() === name.toLowerCase() && !b.used
-            );
-            if (idx >= 0) {
-              s.bullets[idx].used = true;
-              saveSettingsDebounced && saveSettingsDebounced();
-            }
-            const md = SillyTavern.getContext().chatMetadata;
-            md["dangan_last_fired"] = { bullet: name, time: Date.now() };
-            saveMetadata && saveMetadata();
-          }
-        } catch (err) {
-          console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
+if (eventSource && event_types) {
+  eventSource.on(event_types.MESSAGE_SENT, (payload) => {
+    try {
+      if (!payload?.message) return;
+      if (payload.message.includes("Fired Truth Bullet:")) {
+        // Append hidden tag invisibly
+        const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(payload.message);
+        if (m) {
+          const name = m[1].trim();
+          payload.message += ` [DANGAN:TruthBullet="${name}"]`;
+          console.log("🔒 Injected hidden TruthBullet tag ->", name);
         }
-      });
+      }
+    } catch (err) {
+      console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
+    }
+  });
     } else {
       console.warn("[Dangan Trial] eventSource / event_types not available - MESSAGE_SENT handler skipped");
     }
