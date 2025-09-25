@@ -123,3 +123,28 @@
   text-shadow: 0 0 10px rgba(255, 255, 0, 1),
                0 0 20px rgba(255, 255, 100, 0.8);
 }
+
+/* WeakPoint becomes gray if denied */
+.dangan-weak-denied {
+  color: #777 !important;
+  text-shadow: none !important;
+  cursor: default !important;
+  opacity: 0.6;
+}
+
+/* WeakPoint struck-through if accepted */
+.dangan-weak-accepted {
+  position: relative;
+  color: #66ff66 !important;
+  font-weight: 900;
+  text-shadow: 0 0 6px rgba(0, 255, 0, 0.8);
+}
+.dangan-weak-accepted::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  border-top: 2px solid #66ff66;
+  transform: rotate(-10deg);
+}
