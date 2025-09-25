@@ -13,21 +13,27 @@
   }
   await waitForST();
 
-// 🔹 Update Weak Point button style after AI verdict
-window.updateWeakPointStatus = function (weakPoint, status) {
-  const wpSpans = document.querySelectorAll(
-    `[data-wp="${CSS.escape(weakPoint)}"]`
-  );
-  wpSpans.forEach((wp) => {
-    if (status === "accepted") {
-      wp.style.textDecoration = "line-through"; // strike
-      wp.style.opacity = "1";
-    } else if (status === "denied") {
-      wp.style.textDecoration = "none";
-      wp.style.opacity = "0.5"; // gray
+  // 🔹 Update Weak Point button style after AI verdict
+  // Exposed globally for DevTools manual testing too
+  window.updateWeakPointStatus = function (weakPoint, status) {
+    // more robust selection: compare dataset.wp rather than brittle attribute selector escaping
+    const all = Array.from(document.querySelectorAll(".dangan-weak-highlight"));
+    const wpSpans = all.filter((s) => s.dataset && s.dataset.wp === weakPoint);
+
+    if (wpSpans.length === 0) {
+      console.warn("[Dangan Trial] updateWeakPointStatus: no spans matched for:", weakPoint);
     }
-  });
-};
+
+    wpSpans.forEach((wp) => {
+      if (status === "accepted") {
+        wp.classList.add("dangan-weak-accepted");
+        wp.classList.remove("dangan-weak-denied");
+      } else if (status === "denied") {
+        wp.classList.add("dangan-weak-denied");
+        wp.classList.remove("dangan-weak-accepted");
+      }
+    });
+  };
 
   // 🔹 Inject CSS once
   if (!document.getElementById("dangan-style")) {
@@ -182,6 +188,18 @@ window.updateWeakPointStatus = function (weakPoint, status) {
           ev.stopPropagation();
           if (b.used) return;
 
+          // If panel bullet (no weakpoint target), set last target minimally to record bullet fired
+          window.__dangan_last_target = { weakPoint: null, bullet: b.name, ts: Date.now(), applied: false };
+          try {
+            const md = SillyTavern.getContext().chatMetadata;
+            if (md) {
+              md["dangan_last_target"] = Object.assign({}, window.__dangan_last_target);
+              saveMetadata && saveMetadata();
+            }
+          } catch (err) {
+            console.warn("[Dangan Debug] could not persist last target from panel:", err);
+          }
+
           const did = insertBulletText(b);
           if (!did) {
             console.warn("[Dangan Trial] Insertion fallback failed when clicking panel bullet.");
@@ -244,32 +262,32 @@ window.updateWeakPointStatus = function (weakPoint, status) {
     }
   }
 
-// 🔹 Inline highlight replacement
-function processRenderedMessageElement(el, entry) {
-  if (!el) return;
+  // 🔹 Inline highlight replacement
+  function processRenderedMessageElement(el, entry) {
+    if (!el) return;
 
-  // Use immersive version if available
-  if (entry?.metadata?.dangan_display) {
-    el.innerText = entry.metadata.dangan_display;
-  }
+    // Use immersive version if available
+    if (entry?.metadata?.dangan_display) {
+      el.innerText = entry.metadata.dangan_display;
+    }
 
-  // WeakPoint highlighting
-  const inner = el.innerHTML || "";
-  if (!inner.includes("[WeakPoint:")) {
+    // WeakPoint highlighting
+    const inner = el.innerHTML || "";
+    if (!inner.includes("[WeakPoint:")) {
+      el.dataset.danganProcessed = "true";
+      return;
+    }
+    const replaced = inner.replace(/\[WeakPoint:([\s\S]*?)\]/g, (m, p1) => {
+      const desc = p1.trim().replace(/"/g, "&quot;");
+      return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
+    });
+    try {
+      el.innerHTML = replaced;
+    } catch (e) {
+      console.warn("[Dangan Trial] failed to replace WP token", e);
+    }
     el.dataset.danganProcessed = "true";
-    return;
   }
-  const replaced = inner.replace(/\[WeakPoint:([\s\S]*?)\]/g, (m, p1) => {
-    const desc = p1.trim().replace(/"/g, "&quot;");
-    return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
-  });
-  try {
-    el.innerHTML = replaced;
-  } catch (e) {
-    console.warn("[Dangan Trial] failed to replace WP token", e);
-  }
-  el.dataset.danganProcessed = "true";
-}
 
   // 🔹 Click handler for highlights -> floating menu
   function handleWeakClick(btn) {
@@ -306,6 +324,22 @@ function processRenderedMessageElement(el, entry) {
           ev2.stopPropagation();
           if (b.used) return;
 
+          // set a fast global reference first (avoid race between user-send and metadata save)
+          window.__dangan_last_target = { weakPoint: desc, bullet: b.name, ts: Date.now(), applied: false };
+
+          // also save into chat metadata for persistence (best effort)
+          try {
+            const md = SillyTavern.getContext().chatMetadata;
+            if (md) {
+              md["dangan_last_target"] = Object.assign({}, window.__dangan_last_target);
+              saveMetadata && saveMetadata();
+              console.log("[Dangan Debug] last_target set (menu):", md["dangan_last_target"]);
+            }
+          } catch (err) {
+            console.warn("[Dangan Debug] could not set chatMetadata.dangan_last_target", err);
+          }
+
+          // Now insert the bullet text into the textarea
           const inserted = insertBulletText(b);
           if (!inserted) {
             console.warn("[Dangan Trial] Failed to insert bullet from floating menu.");
@@ -315,10 +349,6 @@ function processRenderedMessageElement(el, entry) {
           saveSettingsDebounced && saveSettingsDebounced();
           const cont = document.querySelector("#dangan-panel-container");
           if (cont) renderPanelContents(cont);
-
-          const md = SillyTavern.getContext().chatMetadata;
-          md["dangan_last_target"] = { weakPoint: desc, bullet: b.name, ts: Date.now() };
-          saveMetadata && saveMetadata();
 
           menu.remove();
         });
@@ -444,8 +474,14 @@ function processRenderedMessageElement(el, entry) {
   function setupExtension() {
     patchWandMenu();
 
+    // process any already-rendered messages
     document.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
-      .forEach(processRenderedMessageElement);
+      .forEach((el) => {
+        // try to find entry by matching parent node index if present
+        const idx = el.closest("[data-index]")?.dataset?.index;
+        const entry = idx ? ctx.chat[idx] : null;
+        processRenderedMessageElement(el, entry);
+      });
 
     const chatRoot = document.querySelector("#chat") || document.body;
     const mo = new MutationObserver((mutations) => {
@@ -453,38 +489,58 @@ function processRenderedMessageElement(el, entry) {
         if (m.addedNodes && m.addedNodes.length) {
           m.addedNodes.forEach((n) => {
             if (n.nodeType === 1) {
-const idx = n.dataset?.index;
-const entry = idx ? ctx.chat[idx] : null;
+              const idx = n.dataset?.index;
+              const entry = idx ? ctx.chat[idx] : null;
 
-processRenderedMessageElement(n, entry);
+              processRenderedMessageElement(n, entry);
 
-n.querySelectorAll &&
-  n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
-    .forEach((child) => processRenderedMessageElement(child, entry));
-// After processing a new AI message, check for verdict markers
-const verdictText = n.innerText || entry?.mes || "";
-if (verdictText.includes("Truth Bullet - Accepted") || verdictText.includes("Truth Bullet - Denied")) {
-  const lastTarget = ctx.chatMetadata?.dangan_last_target;
-  console.log("[Dangan Trial] Verdict detected in message:", verdictText, "Target:", lastTarget);
+              n.querySelectorAll &&
+                n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
+                  .forEach((child) => processRenderedMessageElement(child, entry));
 
-  // 🛑 Skip if we’ve already applied this verdict once
-  if (lastTarget?.applied) {
-    console.log("[Dangan Debug] Verdict already applied for:", lastTarget.weakPoint);
-    return;
-  }
+              // After processing a new AI message, check for verdict markers
+              const verdictText = (n.innerText || entry?.mes || "").trim();
+              if (verdictText.includes("Truth Bullet - Accepted") || verdictText.includes("Truth Bullet - Denied")) {
+                // prefer the fast global fallback (set right when user clicked menu)
+                const lastTarget = window.__dangan_last_target || (SillyTavern.getContext && SillyTavern.getContext().chatMetadata && SillyTavern.getContext().chatMetadata.dangan_last_target);
+                console.log("[Dangan Trial] Verdict detected in message:", verdictText, "Target:", lastTarget);
 
-  if (lastTarget?.weakPoint) {
-    if (verdictText.includes("Truth Bullet - Accepted")) {
-      updateWeakPointStatus(lastTarget.weakPoint, "accepted");
-    } else if (verdictText.includes("Truth Bullet - Denied")) {
-      updateWeakPointStatus(lastTarget.weakPoint, "denied");
-    }
+                if (!lastTarget) {
+                  console.warn("[Dangan Trial] Verdict detected but no lastTarget available (skipping).");
+                } else {
+                  // already applied guard
+                  if (lastTarget.applied) {
+                    console.log("[Dangan Debug] Verdict already applied for:", lastTarget.weakPoint);
+                  } else {
+                    if (lastTarget.weakPoint) {
+                      if (verdictText.includes("Truth Bullet - Accepted")) {
+                        updateWeakPointStatus(lastTarget.weakPoint, "accepted");
+                      } else if (verdictText.includes("Truth Bullet - Denied")) {
+                        updateWeakPointStatus(lastTarget.weakPoint, "denied");
+                      }
+                    } else {
+                      // lastTarget has no specific weakPoint (panel-fired); still log it
+                      console.log("[Dangan Debug] Verdict applied for bullet (no weakPoint):", lastTarget.bullet);
+                    }
 
-    // ✅ Mark as applied instead of nulling immediately
-    ctx.chatMetadata.dangan_last_target.applied = true;
-    saveMetadata && saveMetadata();
-  }
-}
+                    // mark applied in both places (global + persistent metadata if present)
+                    lastTarget.applied = true;
+                    if (window.__dangan_last_target) window.__dangan_last_target.applied = true;
+                    try {
+                      const md = SillyTavern.getContext().chatMetadata;
+                      if (md) {
+                        md.dangan_last_target = md.dangan_last_target || {};
+                        md.dangan_last_target.applied = true;
+                        saveMetadata && saveMetadata();
+                      }
+                    } catch (err) {
+                      console.warn("[Dangan Debug] could not persist applied flag:", err);
+                    }
+
+                    console.log("[Dangan Debug] Applied verdict to WeakPoint:", lastTarget.weakPoint, "status:", verdictText.includes("Accepted") ? "accepted" : "denied");
+                  }
+                }
+              }
             }
           });
         }
@@ -501,55 +557,58 @@ if (verdictText.includes("Truth Bullet - Accepted") || verdictText.includes("Tru
     });
   }
 
-if (eventSource && event_types) {
-  console.log("[Dangan Trial] Hooking MESSAGE_SENT event...");
-  eventSource.on(event_types.MESSAGE_SENT, (idx) => {
-    try {
-      const chat = ctx.chat;
-      const entry = chat[idx];
-      const text = entry?.mes ?? "";
-      console.log("[Dangan Trial] MESSAGE_SENT fired:", { idx, text, entry });
+  if (eventSource && event_types) {
+    console.log("[Dangan Trial] Hooking MESSAGE_SENT event...");
+    eventSource.on(event_types.MESSAGE_SENT, (idx) => {
+      try {
+        const chat = ctx.chat;
+        const entry = chat[idx];
+        const text = entry?.mes ?? "";
+        console.log("[Dangan Trial] MESSAGE_SENT fired:", { idx, text, entry });
 
-if (text.includes("Fired Truth Bullet:")) {
-  const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(text);
-  if (m) {
-    const name = m[1].trim();
+        if (text.includes("Fired Truth Bullet:")) {
+          const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(text);
+          if (m) {
+            const name = m[1].trim();
 
-    // Keep a copy of the exact outgoing text for immersive UI display
-    entry.metadata = entry.metadata || {};
-    entry.metadata.dangan_display = text;
+            // Keep a copy of the exact outgoing text for immersive UI display
+            entry.metadata = entry.metadata || {};
+            entry.metadata.dangan_display = text;
 
-    // IMPORTANT: Do NOT replace the actual outgoing message.
-    // Leave entry.mes as the literal "Fired Truth Bullet: <name>"
-    // so the model receives that exact string (no [DANGAN:...] token).
-    // If entry.mes is undefined (safety), set it explicitly:
-    if (typeof entry.mes === "undefined" || entry.mes === null) {
-      entry.mes = text;
-    }
+            // IMPORTANT: Do NOT replace the actual outgoing message.
+            // Leave entry.mes as the literal "Fired Truth Bullet: <name>"
+            // so the model receives that exact string (no [DANGAN:...] token).
+            // If entry.mes is undefined (safety), set it explicitly:
+            if (typeof entry.mes === "undefined" || entry.mes === null) {
+              entry.mes = text;
+            }
 
-    // Optionally log for debugging
-    console.log("[Dangan Trial] Fired Truth Bullet detected:", name);
-    console.log("[Dangan Trial] Outgoing preserved for AI:", entry.mes);
-    console.log("[Dangan Trial] UI immersive text stored:", entry.metadata.dangan_display);
+            // Optionally log for debugging
+            console.log("[Dangan Trial] Fired Truth Bullet detected:", name);
+            console.log("[Dangan Trial] Outgoing preserved for AI:", entry.mes);
+            console.log("[Dangan Trial] UI immersive text stored:", entry.metadata.dangan_display);
 
-    // Update chat metadata (you already did similar elsewhere)
-    const md = SillyTavern.getContext().chatMetadata;
-    md["dangan_last_fired"] = { bullet: name, time: Date.now() };
-    saveMetadata && saveMetadata();
-
+            // Update chat metadata (you already did similar elsewhere)
+            try {
+              const md = SillyTavern.getContext().chatMetadata;
+              if (md) {
+                md["dangan_last_fired"] = { bullet: name, time: Date.now() };
+                saveMetadata && saveMetadata();
+              }
+            } catch (err) {
+              console.warn("[Dangan Debug] couldn't persist dangan_last_fired:", err);
+            }
+          } else {
+            console.log("[Dangan Trial] Bullet marker found but regex failed to capture name.");
+          }
+        }
+      } catch (err) {
+        console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
+      }
+    }); // ← closes eventSource.on
   } else {
-    console.log("[Dangan Trial] Bullet marker found but regex failed to capture name.");
-  }
-}
-
-
- } catch (err) {
-      console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
-    }
-  }); // ← closes eventSource.on
-} else {
-  console.warn("[Dangan Trial] eventSource or event_types missing — cannot hook MESSAGE_SENT!");
-} // ← closes outer if
+    console.warn("[Dangan Trial] eventSource or event_types missing — cannot hook MESSAGE_SENT!");
+  } // ← closes outer if
 
   // 🔹 Init
   setTimeout(() => {
