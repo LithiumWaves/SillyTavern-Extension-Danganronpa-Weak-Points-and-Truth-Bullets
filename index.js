@@ -445,7 +445,7 @@ processRenderedMessageElement(n, entry);
 n.querySelectorAll &&
   n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
     .forEach((child) => processRenderedMessageElement(child, entry));
-              // Check if AI judged a Truth Bullet
+// After processing a new AI message, check for verdict markers
 if (entry?.mes?.includes("Truth Bullet - Accepted") || entry?.mes?.includes("Truth Bullet - Denied")) {
   const lastTarget = ctx.chatMetadata?.dangan_last_target;
   if (lastTarget?.weakPoint) {
