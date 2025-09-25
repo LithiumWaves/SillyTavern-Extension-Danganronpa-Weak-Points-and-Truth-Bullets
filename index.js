@@ -121,27 +121,25 @@
     return extensionSettings[MODULE_KEY];
   }
 
-  // Helper: insert text into the active chat/editor
-  function insertBulletText(text) {
-    try {
-      // Try ProseMirror editor first (modern ST)
-      const pm = document.querySelector(".ProseMirror");
-      if (pm) {
-        pm.focus();
-        // collapse selection to end
-        const range = document.createRange();
-        range.selectNodeContents(pm);
-        range.collapse(false);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-        // execCommand insertText tends to be recognized by ProseMirror
-        document.execCommand("insertText", false, text);
-        // dispatch input event to notify listeners
-        pm.dispatchEvent(new Event("input", { bubbles: true }));
-        console.log("[Dangan Trial] Inserted into ProseMirror:", text);
-        return true;
-      }
+// Helper: insert text into the active chat/editor
+function insertBulletText(text) {
+  try {
+    const textarea = document.querySelector("textarea");
+    if (textarea) {
+      textarea.focus();
+      textarea.value += text; // append instead of overwrite
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      console.log("[Dangan Trial] Inserted into textarea:", text);
+      return true;
+    } else {
+      console.warn("[Dangan Trial] No textarea found to insert bullet.");
+      return false;
+    }
+  } catch (err) {
+    console.warn("[Dangan Trial] Error inserting bullet:", err);
+    return false;
+  }
+}
 
       // older single contenteditable (e.g., #chat-input)
       const contentEditable = document.querySelector("#chat-input[contenteditable], [contenteditable].chat-input, [contenteditable].message-input");
