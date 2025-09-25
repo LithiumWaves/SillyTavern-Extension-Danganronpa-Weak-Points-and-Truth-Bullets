@@ -121,63 +121,20 @@
     return extensionSettings[MODULE_KEY];
   }
 
-// Helper: insert text into the active chat/editor
-function insertBulletText(text) {
-  try {
-    const textarea = document.querySelector("textarea");
-    if (textarea) {
-      textarea.focus();
-      textarea.value += text; // append instead of overwrite
-      textarea.dispatchEvent(new Event("input", { bubbles: true }));
-      console.log("[Dangan Trial] Inserted into textarea:", text);
-      return true;
-    } else {
-      console.warn("[Dangan Trial] No textarea found to insert bullet.");
-      return false;
-    }
-  } catch (err) {
-    console.warn("[Dangan Trial] Error inserting bullet:", err);
-    return false;
-  }
-}
-
-      // older single contenteditable (e.g., #chat-input)
-      const contentEditable = document.querySelector("#chat-input[contenteditable], [contenteditable].chat-input, [contenteditable].message-input");
-      if (contentEditable) {
-        contentEditable.focus();
-        // set caret at end and insert
-        const range = document.createRange();
-        range.selectNodeContents(contentEditable);
-        range.collapse(false);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-        document.execCommand("insertText", false, text);
-        contentEditable.dispatchEvent(new Event("input", { bubbles: true }));
-        console.log("[Dangan Trial] Inserted into contentEditable:", text);
+  // ✅ Clean insertBulletText — no duplicates
+  function insertBulletText(text) {
+    try {
+      const textarea = document.querySelector("textarea");
+      if (textarea) {
+        textarea.focus();
+        textarea.value += text; // append instead of overwrite
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        console.log("[Dangan Trial] Inserted into textarea:", text);
         return true;
+      } else {
+        console.warn("[Dangan Trial] No textarea found to insert bullet.");
+        return false;
       }
-
-      // fallback: textareas / inputs
-      const inputs = document.querySelectorAll("textarea, input[type=text], #message, .chat-input textarea");
-      for (const el of inputs) {
-        el.focus();
-        if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {
-          el.value = text;
-          el.dispatchEvent(new Event("input", { bubbles: true }));
-          console.log("[Dangan Trial] Inserted into input/textarea:", text, el);
-          return true;
-        } else if (el.isContentEditable) {
-          // rare case
-          el.textContent = text;
-          el.dispatchEvent(new Event("input", { bubbles: true }));
-          console.log("[Dangan Trial] Inserted into contentEditable fallback:", text);
-          return true;
-        }
-      }
-
-      console.warn("[Dangan Trial] No suitable editor found to insert bullet.");
-      return false;
     } catch (err) {
       console.warn("[Dangan Trial] Error inserting bullet:", err);
       return false;
@@ -215,7 +172,6 @@ function insertBulletText(text) {
 
           const did = insertBulletText(`I use Truth Bullet: ${b.name} — `);
           if (!did) {
-            // fallback: still mark it used but log warning
             console.warn("[Dangan Trial] Insertion fallback failed when clicking panel bullet.");
           }
           s.bullets[idx].used = true;
@@ -255,7 +211,6 @@ function insertBulletText(text) {
     const addBtn = container.querySelector("#dangan-add-btn");
     const addInput = container.querySelector("#dangan-add-input");
     if (addBtn && addInput) {
-      // prevent duplicate handlers
       addBtn.replaceWith(addBtn.cloneNode(true));
       const newAddBtn = container.querySelector("#dangan-add-btn");
       newAddBtn.addEventListener("click", (ev) => ev.stopPropagation());
@@ -301,8 +256,6 @@ function insertBulletText(text) {
   function handleWeakClick(btn) {
     if (!btn) return;
     const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
-
-    // remove any existing menus
     document.querySelectorAll(".dangan-weak-menu-floating").forEach((x) => x.remove());
 
     const menu = document.createElement("div");
@@ -314,7 +267,6 @@ function insertBulletText(text) {
     `;
     document.body.appendChild(menu);
 
-    // Force visible (in case CSS inherited hidden)
     menu.style.display = "block";
     menu.style.visibility = "visible";
     menu.style.opacity = "1";
@@ -356,14 +308,12 @@ function insertBulletText(text) {
       });
     }
 
-    // position menu near the clicked highlight
     const rect = btn.getBoundingClientRect();
     const menuWidth = Math.min(320, window.innerWidth - 24);
     menu.style.position = "fixed";
     menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8)) + "px";
     menu.style.top = rect.bottom + 8 + "px";
 
-    // clicking outside removes menu
     const off = (e) => {
       if (!menu.contains(e.target) && e.target !== btn) {
         menu.remove();
