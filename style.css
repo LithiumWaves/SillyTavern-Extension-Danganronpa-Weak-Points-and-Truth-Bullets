@@ -1,104 +1,126 @@
-/* Dangan Trial - Toggle UI styles */
+/* Dangan Trial - Dark Bullet UI */
 
-/* Toggle button near chat input */
-/* Floating toggle button */
-#dangan-toggle-btn {
+/* Floating panel beside wand */
+#dangan-panel-container,
+.dangan-panel {
   position: fixed;
-  bottom: 72px;          /* sits above chat input on mobile */
-  right: 12px;
-  z-index: 99999;
-  padding: 6px 10px;
-  font-size: 14px;
-  background: #ffd14a;
-  color: #000;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
-/* Floating panel */
-#dangan-panel {
-  position: fixed;
-  z-index: 99998;
-  background: #fffbe8;
-  border: 2px solid #ffd14a;
-  border-radius: 10px;
-  padding: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 100000;
+  background: #2b2b2b;        /* dark grey */
+  border: 2px solid #003366;  /* dark blue outline */
+  border-radius: 50px;        /* bullet-like shape */
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
   display: none;
-  max-width: 95vw;       /* mobile-friendly width */
+  max-width: 95vw;
   box-sizing: border-box;
+  color: #e0e0e0;
+  width: 260px;
 }
 
 /* panel header row */
-#dangan-panel .d-header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:8px;
+#dangan-panel-container .d-header h4,
+.dangan-panel .d-header h4 {
+  margin: 0;
+  color: #66aaff;     /* light blue highlight */
+  font-size: 14px;
+  text-align: center;
 }
-#dangan-panel .d-header h4 { margin:0; color:#ffeb7a; font-size:14px; }
 
 /* bullet list */
 #dangan-bullet-list {
-  display:block;
+  display: block;
   max-height: 160px;
   overflow-y: auto;
-  margin:0;
-  padding:0;
-  list-style:none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 /* bullet button style */
-.dangan-bullet-btn {
-  display:block;
-  width:100%;
-  margin:6px 0;
-  padding:8px;
-  background:#8ef0ff;
-  color:#000;
-  border-radius:8px;
-  border:none;
-  cursor:pointer;
-  text-align:left;
-  font-weight:600;
+.dangan-bullet-btn,
+.dangan-bullet-btn-styled {
+  display: inline-block;
+  margin: 4px;
+  padding: 6px 12px;
+  background: #2b2b2b;
+  color: #66aaff;
+  border: 1px solid #003366;
+  border-radius: 20px;   /* pill-like for bullet shape */
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+}
+.dangan-bullet-btn:hover,
+.dangan-bullet-btn-styled:hover {
+  background: #1e1e1e;
+  color: #99cfff;
 }
 
 /* used bullet */
 .dangan-bullet-btn.used {
-  background:#444;
-  color:#aaa;
-  text-decoration:line-through;
-  cursor:default;
+  background: #1a1a1a;
+  color: #777;
+  text-decoration: line-through;
+  cursor: default;
+  border-color: #444;
 }
 
-/* small utilities */
-#dangan-add-row { display:flex; gap:6px; margin-top:8px; }
-#dangan-add-row input { flex:1; padding:6px; border-radius:6px; border:1px solid #333; background:#111; color:#fff; }
-#dangan-add-row button { padding:6px 8px; border-radius:6px; background:#ffeb7a; border:none; font-weight:700; cursor:pointer; }
+/* add row */
+#dangan-add-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+#dangan-add-row input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 20px;
+  border: 1px solid #003366;
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+#dangan-add-row button {
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #2b2b2b;
+  border: 1px solid #003366;
+  color: #66aaff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+#dangan-add-row button:hover {
+  background: #1e1e1e;
+  color: #99cfff;
+}
 
-/* floating weakpoint menu (when clicking a Weak Point in chat) */
+/* floating weakpoint menu */
 .dangan-weak-menu-floating {
   position: fixed;
   z-index: 100000;
   min-width: 220px;
   max-width: 90vw;
-  background: #0b0b0b;
-  border: 1px solid #222;
-  padding: 8px;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+  background: #2b2b2b;
+  border: 2px solid #003366;
+  padding: 12px;
+  border-radius: 50px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+  color: #e0e0e0;
 }
 
-/* weakpoint button inserted into chat */
+/* weakpoint button inside chat */
 .dangan-weak-btn {
-  background: #ffeb7a;
-  color: #000;
-  border-radius: 6px;
-  padding: 6px 8px;
-  margin: 4px 0;
-  border: none;
+  background: #2b2b2b;
+  color: #66aaff;
+  border-radius: 20px;
+  padding: 6px 12px;
+  margin: 4px;
+  border: 1px solid #003366;
   cursor: pointer;
-  font-weight:700;
+  font-weight: 700;
+  transition: background 0.2s, color 0.2s;
+}
+.dangan-weak-btn:hover {
+  background: #1e1e1e;
+  color: #99cfff;
 }
