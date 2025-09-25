@@ -445,6 +445,20 @@ processRenderedMessageElement(n, entry);
 n.querySelectorAll &&
   n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
     .forEach((child) => processRenderedMessageElement(child, entry));
+              // Check if AI judged a Truth Bullet
+if (entry?.mes?.includes("Truth Bullet - Accepted") || entry?.mes?.includes("Truth Bullet - Denied")) {
+  const lastTarget = ctx.chatMetadata?.dangan_last_target;
+  if (lastTarget?.weakPoint) {
+    const wpSpans = document.querySelectorAll(`[data-wp="${lastTarget.weakPoint}"]`);
+    wpSpans.forEach((wp) => {
+      if (entry.mes.includes("Truth Bullet - Accepted")) {
+        wp.classList.add("dangan-weak-accepted");
+      } else if (entry.mes.includes("Truth Bullet - Denied")) {
+        wp.classList.add("dangan-weak-denied");
+      }
+    });
+  }
+}
             }
           });
         }
