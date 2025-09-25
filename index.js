@@ -462,15 +462,29 @@ n.querySelectorAll &&
 // After processing a new AI message, check for verdict markers
 if (entry?.mes?.includes("Truth Bullet - Accepted") || entry?.mes?.includes("Truth Bullet - Denied")) {
   const lastTarget = ctx.chatMetadata?.dangan_last_target;
+
   if (lastTarget?.weakPoint) {
-    if (entry.mes.includes("Truth Bullet - Accepted")) {
-      updateWeakPointStatus(lastTarget.weakPoint, "accepted");
-    } else if (entry.mes.includes("Truth Bullet - Denied")) {
-      updateWeakPointStatus(lastTarget.weakPoint, "denied");
+    const wpSpans = document.querySelectorAll(
+      `[data-wp="${CSS.escape(lastTarget.weakPoint)}"]`
+    );
+
+    if (wpSpans.length === 0) {
+      console.warn("[Dangan Trial] No matching WeakPoint found for:", lastTarget.weakPoint);
     }
+
+    wpSpans.forEach((wp) => {
+      if (entry.mes.includes("Truth Bullet - Accepted")) {
+        updateWeakPointStatus(lastTarget.weakPoint, "accepted");
+      } else if (entry.mes.includes("Truth Bullet - Denied")) {
+        updateWeakPointStatus(lastTarget.weakPoint, "denied");
+      }
+    });
+
+    // Clear metadata after applying verdict so it doesn’t repeat
+    ctx.chatMetadata.dangan_last_target = null;
+    saveMetadata && saveMetadata();
   }
 }
-
             }
           });
         }
