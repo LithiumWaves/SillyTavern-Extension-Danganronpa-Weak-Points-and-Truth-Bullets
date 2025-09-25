@@ -467,6 +467,12 @@ if (verdictText.includes("Truth Bullet - Accepted") || verdictText.includes("Tru
   const lastTarget = ctx.chatMetadata?.dangan_last_target;
   console.log("[Dangan Trial] Verdict detected in message:", verdictText, "Target:", lastTarget);
 
+  // 🛑 Skip if we’ve already applied this verdict once
+  if (lastTarget?.applied) {
+    console.log("[Dangan Debug] Verdict already applied for:", lastTarget.weakPoint);
+    return;
+  }
+
   if (lastTarget?.weakPoint) {
     if (verdictText.includes("Truth Bullet - Accepted")) {
       updateWeakPointStatus(lastTarget.weakPoint, "accepted");
@@ -474,8 +480,8 @@ if (verdictText.includes("Truth Bullet - Accepted") || verdictText.includes("Tru
       updateWeakPointStatus(lastTarget.weakPoint, "denied");
     }
 
-    // Clear metadata after applying verdict so it doesn’t repeat
-    ctx.chatMetadata.dangan_last_target = null;
+    // ✅ Mark as applied instead of nulling immediately
+    ctx.chatMetadata.dangan_last_target.applied = true;
     saveMetadata && saveMetadata();
   }
 }
