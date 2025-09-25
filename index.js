@@ -79,22 +79,21 @@
         cursor: pointer;
       }
 
-/* Weak Point highlights */
-.dangan-weak-highlight {
-  color: #ffff66; /* bright yellow */
-  background: transparent;
-  font-weight: 700;
-  cursor: pointer;
-  text-shadow: 0 0 6px rgba(255, 255, 0, 0.8);
-  transition: text-shadow 0.2s, color 0.2s;
-}
+      /* Weak Point highlights */
+      .dangan-weak-highlight {
+        color: #ffff66; /* bright yellow */
+        background: transparent;
+        font-weight: 700;
+        cursor: pointer;
+        text-shadow: 0 0 6px rgba(255, 255, 0, 0.8);
+        transition: text-shadow 0.2s, color 0.2s;
+      }
 
-.dangan-weak-highlight:hover {
-  color: #ffffff;
-  text-shadow: 0 0 10px rgba(255, 255, 0, 1),
-               0 0 20px rgba(255, 255, 100, 0.8);
-}
-
+      .dangan-weak-highlight:hover {
+        color: #ffffff;
+        text-shadow: 0 0 10px rgba(255, 255, 0, 1),
+                     0 0 20px rgba(255, 255, 100, 0.8);
+      }
     `;
     document.head.appendChild(style);
   }
@@ -422,8 +421,7 @@
     patchWandMenu();
 
     document.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
-  .forEach(processRenderedMessageElement);
-
+      .forEach(processRenderedMessageElement);
 
     const chatRoot = document.querySelector("#chat") || document.body;
     const mo = new MutationObserver((mutations) => {
@@ -431,9 +429,12 @@
         if (m.addedNodes && m.addedNodes.length) {
           m.addedNodes.forEach((n) => {
             if (n.nodeType === 1) {
+              // ✅ Process node itself
+              processRenderedMessageElement(n);
+              // ✅ Process eligible children
               n.querySelectorAll &&
                 n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
-  .forEach(processRenderedMessageElement);
+                  .forEach(processRenderedMessageElement);
             }
           });
         }
@@ -441,10 +442,11 @@
     });
     mo.observe(chatRoot, { childList: true, subtree: true });
 
+    // ✅ Use closest instead of matches
     document.addEventListener("click", (ev) => {
-  const wp = ev.target.closest(".dangan-weak-highlight");
-  if (wp) handleWeakClick(ev);
-});
+      const wp = ev.target.closest(".dangan-weak-highlight");
+      if (wp) handleWeakClick(ev);
+    });
 
     eventSource.on(event_types.MESSAGE_SENT, (payload) => {
       try {
