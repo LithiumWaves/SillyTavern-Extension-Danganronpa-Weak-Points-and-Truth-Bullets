@@ -256,6 +256,12 @@
     `;
     document.body.appendChild(menu);
 
+    // ✅ Force visibility so it doesn’t inherit hidden state
+    menu.style.display = "block";
+    menu.style.visibility = "visible";
+    menu.style.opacity = "1";
+
+
     const menuList = menu.querySelector("#dangan-menu-bullets");
     const s = ensureSettings();
     if (!s.bullets.length) {
