@@ -232,19 +232,12 @@
 function processRenderedMessageElement(el, entry) {
   if (!el) return;
 
-  // If immersive version is available, always show that
-  if (!entry && el.dataset?.messageId) {
-    const id = parseInt(el.dataset.messageId, 10);
-    if (!isNaN(id) && window.SillyTavern) {
-      const ctx = window.SillyTavern.getContext();
-      entry = ctx?.chat?.find(e => e?.id === id);
-    }
-  }
-
+  // Use immersive version if available
   if (entry?.metadata?.dangan_display) {
     el.innerText = entry.metadata.dangan_display;
   }
 
+  // WeakPoint highlighting
   const inner = el.innerHTML || "";
   if (!inner.includes("[WeakPoint:")) {
     el.dataset.danganProcessed = "true";
@@ -444,10 +437,14 @@ function processRenderedMessageElement(el, entry) {
         if (m.addedNodes && m.addedNodes.length) {
           m.addedNodes.forEach((n) => {
             if (n.nodeType === 1) {
-              processRenderedMessageElement(n);
-              n.querySelectorAll &&
-                n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
-                  .forEach(processRenderedMessageElement);
+const idx = n.dataset?.index;
+const entry = idx ? ctx.chat[idx] : null;
+
+processRenderedMessageElement(n, entry);
+
+n.querySelectorAll &&
+  n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
+    .forEach((child) => processRenderedMessageElement(child, entry));
             }
           });
         }
