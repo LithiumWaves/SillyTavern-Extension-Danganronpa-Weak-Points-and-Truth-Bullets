@@ -455,22 +455,21 @@ if (eventSource && event_types) {
     try {
       if (!payload?.message) return;
       if (payload.message.includes("Fired Truth Bullet:")) {
-        // Append hidden tag invisibly
         const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(payload.message);
         if (m) {
           const name = m[1].trim();
+          console.log("📩 Before injection:", payload.message);
           payload.message += ` [DANGAN:TruthBullet="${name}"]`;
-          console.log("🔒 Injected hidden TruthBullet tag ->", name);
+          console.log("🔒 After injection (with hidden tag):", payload.message);
         }
       }
     } catch (err) {
       console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
     }
   });
-    } else {
-      console.warn("[Dangan Trial] eventSource / event_types not available - MESSAGE_SENT handler skipped");
-    }
-  }
+} else {
+  console.warn("[Dangan Trial] eventSource / event_types not available - MESSAGE_SENT handler skipped");
+}
 
   setTimeout(() => {
     ensureSettings();
