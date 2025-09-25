@@ -19,12 +19,11 @@
     const style = document.createElement("style");
     style.id = "dangan-style";
     style.textContent = `
-      /* Floating panel */
       .dangan-panel {
         padding: 12px;
-        background: #2b2b2b; /* dark grey */
-        border: 2px solid #003366; /* dark blue outline */
-        border-radius: 50px; /* bullet-like */
+        background: #2b2b2b;
+        border: 2px solid #003366;
+        border-radius: 50px;
         max-height: 70vh;
         overflow-y: auto;
         color: #e0e0e0;
@@ -36,8 +35,6 @@
         color: #66aaff;
         text-align: center;
       }
-
-      /* Bullet buttons */
       .dangan-bullet-btn-styled {
         background: #2b2b2b;
         border: 1px solid #003366;
@@ -52,8 +49,6 @@
         cursor: not-allowed;
         border-color: #444;
       }
-
-      /* Input row */
       #dangan-add-row {
         display: flex;
         gap: 6px;
@@ -78,17 +73,14 @@
         color: #66aaff;
         cursor: pointer;
       }
-
-      /* Weak Point highlights */
       .dangan-weak-highlight {
-        color: #ffff66; /* bright yellow */
+        color: #ffff66;
         background: transparent;
         font-weight: 700;
         cursor: pointer;
         text-shadow: 0 0 6px rgba(255, 255, 0, 0.8);
         transition: text-shadow 0.2s, color 0.2s;
       }
-
       .dangan-weak-highlight:hover {
         color: #ffffff;
         text-shadow: 0 0 10px rgba(255, 255, 0, 1),
@@ -224,33 +216,27 @@
     }
   }
 
-  // --------------------- FIXED FUNCTION ---------------------
+  // 🔹 Highlight replacement
   function processRenderedMessageElement(el) {
     if (!el) return;
-    if (el.dataset?.danganProcessed) return;
-
     const inner = el.innerHTML || "";
-    if (!/\[WeakPoint:.*?\]/.test(inner)) {
+    if (!inner.includes("[WeakPoint:")) {
       el.dataset.danganProcessed = "true";
       return;
     }
-
     const replaced = inner.replace(/\[WeakPoint:(.*?)\]/g, (m, p1) => {
       const desc = p1.trim().replace(/"/g, "&quot;");
-      return `<span class="dangan-weak-highlight" data-wp="${desc}" role="button" tabindex="0">${desc}</span>`;
+      return `<span class="dangan-weak-highlight" data-wp="${desc}">${desc}</span>`;
     });
-
     try {
       el.innerHTML = replaced;
     } catch (e) {
       console.warn("[Dangan Trial] failed to replace WP token", e);
     }
-
     el.dataset.danganProcessed = "true";
   }
-  // ------------------- END FIXED FUNCTION ------------------
 
-  // --------------------- FIXED FUNCTION ---------------------
+  // 🔹 Floating menu click handler
   function handleWeakClick(btn) {
     if (!btn) return;
     const desc = btn.getAttribute("data-wp") || btn.textContent || "Unknown";
@@ -259,11 +245,14 @@
 
     const menu = document.createElement("div");
     menu.className = "dangan-weak-menu-floating dangan-panel";
-    menu.style.zIndex = 100001;
     menu.innerHTML = `
-      <div style="color:#66aaff;font-weight:700;margin-bottom:6px;">Weak Point: ${desc}</div>
+      <div style="color:#66aaff;font-weight:700;margin-bottom:6px;">
+        Weak Point: ${desc}
+      </div>
       <div id="dangan-menu-bullets" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-      <div style="margin-top:6px;color:#aaa;font-size:12px;">Click a bullet to use it against this Weak Point.</div>
+      <div style="margin-top:6px;color:#aaa;font-size:12px;">
+        Click a bullet to use it against this Weak Point.
+      </div>
     `;
     document.body.appendChild(menu);
 
@@ -315,9 +304,11 @@
       });
     }
 
+    // ✅ Position menu
     const rect = btn.getBoundingClientRect();
     const menuWidth = Math.min(320, window.innerWidth - 24);
     menu.style.position = "fixed";
+    menu.style.zIndex = 9999;
     menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8)) + "px";
     menu.style.top = rect.bottom + 8 + "px";
 
@@ -329,7 +320,6 @@
     };
     window.addEventListener("mousedown", off);
   }
-  // ------------------- END FIXED FUNCTION ------------------
 
   function patchWandMenu() {
     const menu = document.querySelector("#extensionsMenu");
@@ -460,7 +450,7 @@
         handleWeakClick(wp);
       }
     });
-    
+
     eventSource.on(event_types.MESSAGE_SENT, (payload) => {
       try {
         const msg = payload?.message || (payload && payload.content) || "";
@@ -490,5 +480,5 @@
     setupExtension();
   }, 500);
 
-  console.log("[Dangan Trial] Wand Menu beside/floating panel loaded");
+  console.log("[Dangan Trial] Wand Menu beside/floating panel loaded with CSS styling");
 })();
