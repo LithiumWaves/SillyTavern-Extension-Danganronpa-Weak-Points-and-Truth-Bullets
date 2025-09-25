@@ -432,8 +432,8 @@
           m.addedNodes.forEach((n) => {
             if (n.nodeType === 1) {
               n.querySelectorAll &&
-                n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text")
-                  .forEach(processRenderedMessageElement);
+                n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
+  .forEach(processRenderedMessageElement);
             }
           });
         }
