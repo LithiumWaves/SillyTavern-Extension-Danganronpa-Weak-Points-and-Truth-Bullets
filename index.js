@@ -121,25 +121,17 @@
     return extensionSettings[MODULE_KEY];
   }
 
-  // ✅ Clean insertBulletText — no duplicates
-  function insertBulletText(text) {
-    try {
-      const textarea = document.querySelector("textarea");
-      if (textarea) {
-        textarea.focus();
-        textarea.value += text; // append instead of overwrite
-        textarea.dispatchEvent(new Event("input", { bubbles: true }));
-        console.log("[Dangan Trial] Inserted into textarea:", text);
-        return true;
-      } else {
-        console.warn("[Dangan Trial] No textarea found to insert bullet.");
-        return false;
-      }
-    } catch (err) {
-      console.warn("[Dangan Trial] Error inserting bullet:", err);
-      return false;
-    }
+function insertBulletText(b) {
+  const el = document.querySelector("#send_textarea");
+  if (!el) {
+    console.warn("Could not find #send_textarea");
+    return;
   }
+  el.focus();
+  el.value = (el.value || "") + `I use Truth Bullet: ${b.name} — `;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 
   function renderPanelContents(container) {
     ensureSettings();
@@ -170,7 +162,7 @@
           ev.stopPropagation();
           if (b.used) return;
 
-          const did = insertBulletText(`I use Truth Bullet: ${b.name} — `);
+          const did = insertBulletText(b);
           if (!did) {
             console.warn("[Dangan Trial] Insertion fallback failed when clicking panel bullet.");
           }
@@ -287,7 +279,7 @@
           ev2.stopPropagation();
           if (b.used) return;
 
-          const inserted = insertBulletText(`I use Truth Bullet: ${b.name} — `);
+          const inserted = insertBulletText(b);
           if (!inserted) {
             console.warn("[Dangan Trial] Failed to insert bullet from floating menu.");
           }
