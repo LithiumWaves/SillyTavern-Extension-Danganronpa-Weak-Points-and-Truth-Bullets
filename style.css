@@ -110,29 +110,16 @@
 
 /* inline weakpoint highlight inside chat text */
 .dangan-weak {
-  display: inline-block;
-  color: #ffff66; /* soft yellow */
-  background: rgba(255, 255, 0, 0.15); /* faint transparent glow */
-  border: 1px solid rgba(255, 255, 0, 0.4);
-  border-radius: 14px;
-  padding: 2px 8px;
-  margin: 2px 4px;
+  color: #ffff66;                /* bright yellow */
+  background: transparent;       /* no capsule */
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
-}
-.dangan-weak:hover {
-  background: rgba(255, 255, 0, 0.25);
-  box-shadow: 0 0 8px rgba(255, 255, 0, 0.6);
+  text-shadow: 0 0 6px rgba(255, 255, 0, 0.8); /* glow */
+  transition: text-shadow 0.2s, color 0.2s;
 }
 
-/* inline weakpoint highlight inside chat text */
-.dangan-weak {
-  color: yellow;
-  background: transparent;
-  font-weight: 700;   /* optional, makes it pop more */
-  cursor: pointer;    /* so it still feels interactive */
-}
 .dangan-weak:hover {
-  text-shadow: 0 0 6px rgba(255, 255, 0, 0.8);
+  color: #ffffff;                /* white-yellow on hover */
+  text-shadow: 0 0 10px rgba(255, 255, 0, 1),
+               0 0 20px rgba(255, 255, 100, 0.8);
 }
