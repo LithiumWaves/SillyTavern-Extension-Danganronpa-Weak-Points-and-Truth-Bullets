@@ -1,3 +1,5 @@
+CORRECT NOW?!
+
 // Dangan Trial (Manual Wand Menu Patch) - SillyTavern extension (index.js)
 (async () => {
   function waitForST() {
