@@ -455,13 +455,28 @@ if (eventSource && event_types) {
   eventSource.on(event_types.MESSAGE_SENT, (payload) => {
     try {
       if (!payload?.message) return;
+
       if (payload.message.includes("Fired Truth Bullet:")) {
         const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(payload.message);
         if (m) {
           const name = m[1].trim();
-          console.log("📩 Before injection:", payload.message);
-          payload.message += ` [DANGAN:TruthBullet="${name}"]`;
-          console.log("🔒 After injection (with hidden tag):", payload.message);
+
+          console.log("📩 Original outgoing (what user sees):", payload.message);
+
+          // What AI will see
+          const aiMessage = `[DANGAN:TruthBullet="${name}"]`;
+
+          // Store immersive text separately
+          payload.metadata = payload.metadata || {};
+          payload.metadata.dangan_display = payload.message;
+
+          // Rewrite message sent to AI
+          payload.message = aiMessage;
+
+          console.log("🎭 Immersive shown in UI:", payload.metadata.dangan_display);
+          console.log("🔒 Sent to AI:", payload.message);
+        } else {
+          console.log("⚠️ Bullet marker found but regex failed to capture name.");
         }
       }
     } catch (err) {
