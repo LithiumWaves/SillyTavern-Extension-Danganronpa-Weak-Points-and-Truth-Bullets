@@ -130,6 +130,8 @@
   text-shadow: none !important;
   cursor: default !important;
   opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
 }
 
 /* WeakPoint struck-through if accepted */
