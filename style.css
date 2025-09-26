@@ -171,3 +171,36 @@
   clip-path: polygon(0 20%, 100% 40%, 100% 100%, 0 100%);
   transform: skewY(5deg) translateX(3px);
 }
+
+/* Truth Bullet Animation */
+
+/* The keyframes define the flight */
+@keyframes dangan-bullet-fly {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6) rotate(-10deg);
+    opacity: 0.2;
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1) rotate(5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--target-x, 200px), var(--target-y, -200px)) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* The bullet itself */
+.dangan-bullet-fly {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 100000;
+  font-weight: 800;
+  color: #66aaff;
+  text-shadow: 0 0 8px #003366, 0 0 12px #66aaff;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: dangan-bullet-fly 1s ease-out forwards;
+}
+
