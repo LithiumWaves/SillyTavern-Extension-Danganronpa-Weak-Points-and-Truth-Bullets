@@ -13,39 +13,55 @@
   }
   await waitForST();
 
-// 🔹 Update Weak Point button style after AI verdict
-// Exposed globally for DevTools manual testing too
-window.updateWeakPointStatus = function (weakPoint, status) {
-  const all = Array.from(document.querySelectorAll(".dangan-weak-highlight"));
-  const wpSpans = all.filter((s) => s.dataset && s.dataset.wp === weakPoint);
+  // 🔹 Update Weak Point button style after AI verdict
+  // Exposed globally for DevTools manual testing too
+  window.updateWeakPointStatus = function (weakPoint, status) {
+    const all = Array.from(document.querySelectorAll(".dangan-weak-highlight"));
+    const wpSpans = all.filter((s) => s.dataset && s.dataset.wp === weakPoint);
 
-  if (wpSpans.length === 0) {
-    console.warn("[Dangan Trial] updateWeakPointStatus: no spans matched for:", weakPoint);
-    return;
-  }
-
-  wpSpans.forEach((wp) => {
-    wp.classList.remove("dangan-weak-accepted", "dangan-weak-denied");
-
-    if (status === "accepted") {
-      wp.classList.add("dangan-weak-accepted");
-    } else if (status === "denied") {
-      wp.classList.add("dangan-weak-denied");
+    if (wpSpans.length === 0) {
+      console.warn("[Dangan Trial] updateWeakPointStatus: no spans matched for:", weakPoint);
+      return;
     }
 
-    if (status === "accepted" || status === "denied") {
-      // 🔒 Make it unclickable permanently
-      wp.style.pointerEvents = "none";
-      wp.style.cursor = "not-allowed";
+    wpSpans.forEach((wp) => {
+      wp.classList.remove("dangan-weak-accepted", "dangan-weak-denied");
 
-      // ✅ Persist verdict in metadata
+      if (status === "accepted") {
+        wp.classList.add("dangan-weak-accepted");
+      } else if (status === "denied") {
+        wp.classList.add("dangan-weak-denied");
+      }
+
+      if (status === "accepted" || status === "denied") {
+        // 🔒 Make it unclickable permanently
+        wp.style.pointerEvents = "none";
+        wp.style.cursor = "not-allowed";
+
+        // ✅ Persist verdict in metadata
+        const md = SillyTavern.getContext().chatMetadata;
+        md["dangan_verdicts"] = md["dangan_verdicts"] || {};
+        md["dangan_verdicts"][weakPoint] = status;
+        if (typeof saveMetadata === "function") saveMetadata();
+      }
+    });
+  };
+
+  // 🔹 Restore all saved verdicts on startup or message render
+  function restoreWeakPointVerdicts() {
+    try {
       const md = SillyTavern.getContext().chatMetadata;
-      md["dangan_verdicts"] = md["dangan_verdicts"] || {};
-      md["dangan_verdicts"][weakPoint] = status;
-      if (typeof saveMetadata === "function") saveMetadata();
+      if (!md || !md.dangan_verdicts) return;
+
+      Object.entries(md.dangan_verdicts).forEach(([wp, status]) => {
+        updateWeakPointStatus(wp, status);
+      });
+
+      console.log("[Dangan Trial] Restored Weak Point verdicts:", md.dangan_verdicts);
+    } catch (err) {
+      console.warn("[Dangan Trial] Failed to restore verdicts:", err);
     }
-  });
-};
+  }
 
   // 🔹 Inject CSS once
   if (!document.getElementById("dangan-style")) {
@@ -489,11 +505,13 @@ window.updateWeakPointStatus = function (weakPoint, status) {
     // process any already-rendered messages
     document.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
       .forEach((el) => {
-        // try to find entry by matching parent node index if present
         const idx = el.closest("[data-index]")?.dataset?.index;
         const entry = idx ? ctx.chat[idx] : null;
         processRenderedMessageElement(el, entry);
       });
+
+    // ✅ restore verdicts for already-rendered WeakPoints
+    restoreWeakPointVerdicts();
 
     const chatRoot = document.querySelector("#chat") || document.body;
     const mo = new MutationObserver((mutations) => {
@@ -510,17 +528,18 @@ window.updateWeakPointStatus = function (weakPoint, status) {
                 n.querySelectorAll(".mes_text, .message .text, .character-message .mes_text, .message-text, .chat-message-text")
                   .forEach((child) => processRenderedMessageElement(child, entry));
 
+              // ✅ reapply verdicts whenever new nodes render
+              restoreWeakPointVerdicts();
+
               // After processing a new AI message, check for verdict markers
               const verdictText = (n.innerText || entry?.mes || "").trim();
               if (verdictText.includes("Truth Bullet - Accepted") || verdictText.includes("Truth Bullet - Denied")) {
-                // prefer the fast global fallback (set right when user clicked menu)
                 const lastTarget = window.__dangan_last_target || (SillyTavern.getContext && SillyTavern.getContext().chatMetadata && SillyTavern.getContext().chatMetadata.dangan_last_target);
                 console.log("[Dangan Trial] Verdict detected in message:", verdictText, "Target:", lastTarget);
 
                 if (!lastTarget) {
                   console.warn("[Dangan Trial] Verdict detected but no lastTarget available (skipping).");
                 } else {
-                  // already applied guard
                   if (lastTarget.applied) {
                     console.log("[Dangan Debug] Verdict already applied for:", lastTarget.weakPoint);
                   } else {
@@ -531,11 +550,9 @@ window.updateWeakPointStatus = function (weakPoint, status) {
                         updateWeakPointStatus(lastTarget.weakPoint, "denied");
                       }
                     } else {
-                      // lastTarget has no specific weakPoint (panel-fired); still log it
                       console.log("[Dangan Debug] Verdict applied for bullet (no weakPoint):", lastTarget.bullet);
                     }
 
-                    // mark applied in both places (global + persistent metadata if present)
                     lastTarget.applied = true;
                     if (window.__dangan_last_target) window.__dangan_last_target.applied = true;
                     try {
@@ -582,25 +599,14 @@ window.updateWeakPointStatus = function (weakPoint, status) {
           const m = /Fired Truth Bullet:\s*([^—\n\r]+)/i.exec(text);
           if (m) {
             const name = m[1].trim();
-
-            // Keep a copy of the exact outgoing text for immersive UI display
             entry.metadata = entry.metadata || {};
             entry.metadata.dangan_display = text;
-
-            // IMPORTANT: Do NOT replace the actual outgoing message.
-            // Leave entry.mes as the literal "Fired Truth Bullet: <name>"
-            // so the model receives that exact string (no [DANGAN:...] token).
-            // If entry.mes is undefined (safety), set it explicitly:
             if (typeof entry.mes === "undefined" || entry.mes === null) {
               entry.mes = text;
             }
 
-            // Optionally log for debugging
             console.log("[Dangan Trial] Fired Truth Bullet detected:", name);
-            console.log("[Dangan Trial] Outgoing preserved for AI:", entry.mes);
-            console.log("[Dangan Trial] UI immersive text stored:", entry.metadata.dangan_display);
 
-            // Update chat metadata (you already did similar elsewhere)
             try {
               const md = SillyTavern.getContext().chatMetadata;
               if (md) {
@@ -610,17 +616,15 @@ window.updateWeakPointStatus = function (weakPoint, status) {
             } catch (err) {
               console.warn("[Dangan Debug] couldn't persist dangan_last_fired:", err);
             }
-          } else {
-            console.log("[Dangan Trial] Bullet marker found but regex failed to capture name.");
           }
         }
       } catch (err) {
         console.warn("[Dangan Trial] MESSAGE_SENT handler error:", err);
       }
-    }); // ← closes eventSource.on
+    });
   } else {
     console.warn("[Dangan Trial] eventSource or event_types missing — cannot hook MESSAGE_SENT!");
-  } // ← closes outer if
+  }
 
   // 🔹 Init
   setTimeout(() => {
