@@ -13,29 +13,39 @@
   }
   await waitForST();
 
-  // 🔹 Update Weak Point button style after AI verdict
-  // Exposed globally for DevTools manual testing too
-  window.updateWeakPointStatus = function (weakPoint, status) {
-    // more robust selection: compare dataset.wp rather than brittle attribute selector escaping
-    const all = Array.from(document.querySelectorAll(".dangan-weak-highlight"));
-    const wpSpans = all.filter((s) => s.dataset && s.dataset.wp === weakPoint);
+// 🔹 Update Weak Point button style after AI verdict
+// Exposed globally for DevTools manual testing too
+window.updateWeakPointStatus = function (weakPoint, status) {
+  const all = Array.from(document.querySelectorAll(".dangan-weak-highlight"));
+  const wpSpans = all.filter((s) => s.dataset && s.dataset.wp === weakPoint);
 
-    if (wpSpans.length === 0) {
-      console.warn("[Dangan Trial] updateWeakPointStatus: no spans matched for:", weakPoint);
+  if (wpSpans.length === 0) {
+    console.warn("[Dangan Trial] updateWeakPointStatus: no spans matched for:", weakPoint);
+    return;
+  }
+
+  wpSpans.forEach((wp) => {
+    wp.classList.remove("dangan-weak-accepted", "dangan-weak-denied");
+
+    if (status === "accepted") {
+      wp.classList.add("dangan-weak-accepted");
+    } else if (status === "denied") {
+      wp.classList.add("dangan-weak-denied");
     }
 
-    wpSpans.forEach((wp) => {
-      if (status === "accepted") {
-        wp.classList.add("dangan-weak-accepted");
-        wp.classList.remove("dangan-weak-denied");
-      } else if (status === "denied") {
-        wp.classList.add("dangan-weak-denied");
-        wp.classList.remove("dangan-weak-accepted");
-        wp.style.pointerEvents = "none";  // THIS MIGHT BREAK
-        wp.style.cursor = "not-allowed";  // THIS MIGHT BREAK 2
-      }
-    });
-  };
+    if (status === "accepted" || status === "denied") {
+      // 🔒 Make it unclickable permanently
+      wp.style.pointerEvents = "none";
+      wp.style.cursor = "not-allowed";
+
+      // ✅ Persist verdict in metadata
+      const md = SillyTavern.getContext().chatMetadata;
+      md["dangan_verdicts"] = md["dangan_verdicts"] || {};
+      md["dangan_verdicts"][weakPoint] = status;
+      if (typeof saveMetadata === "function") saveMetadata();
+    }
+  });
+};
 
   // 🔹 Inject CSS once
   if (!document.getElementById("dangan-style")) {
