@@ -31,6 +31,8 @@
       } else if (status === "denied") {
         wp.classList.add("dangan-weak-denied");
         wp.classList.remove("dangan-weak-accepted");
+        wp.style.pointerEvents = "none";  // THIS MIGHT BREAK
+        wp.style.cursor = "not-allowed";  // THIS MIGHT BREAK 2
       }
     });
   };
