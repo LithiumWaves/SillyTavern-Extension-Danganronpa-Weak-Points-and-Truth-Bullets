@@ -178,8 +178,7 @@ function animateBulletShot(bulletName, weakPointDesc) {
 }
 .dangan-bullet-fly {
   position: fixed;
-  top: 50%;
-  left: 50%;
+  inset: 50% auto auto 50%;  /* start dead center of viewport */
   z-index: 100000;
   font-weight: 800;
   color: #66aaff;
@@ -187,9 +186,7 @@ function animateBulletShot(bulletName, weakPointDesc) {
   pointer-events: none;
   white-space: nowrap;
   animation: dangan-bullet-fly 1s ease-out forwards;
-}
-
-      
+}    
     `;
     document.head.appendChild(style);
   }
