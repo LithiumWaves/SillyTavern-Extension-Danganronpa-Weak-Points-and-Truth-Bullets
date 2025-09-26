@@ -134,19 +134,40 @@
   cursor: not-allowed;
 }
 
-/* WeakPoint struck-through if accepted */
+/* WeakPoint fractured/glowing if accepted */
 .dangan-weak-accepted {
   position: relative;
-  color: #66ff66 !important;
+  display: inline-block;
   font-weight: 900;
+  color: #66ff66 !important;
   text-shadow: 0 0 6px rgba(0, 255, 0, 0.8);
+  overflow: hidden;
 }
+
+/* Shard layers */
+.dangan-weak-accepted::before,
 .dangan-weak-accepted::after {
-  content: "";
+  content: attr(data-text);
   position: absolute;
   left: 0;
-  top: 50%;
   width: 100%;
-  border-top: 2px solid #66ff66;
-  transform: rotate(-10deg);
+  color: #33cc33;
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.9);
+  pointer-events: none;
+}
+
+/* Top shard */
+.dangan-weak-accepted::before {
+  top: 0;
+  height: 55%;
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 60%);
+  transform: skewY(-6deg) translateX(-3px);
+}
+
+/* Bottom shard */
+.dangan-weak-accepted::after {
+  bottom: 0;
+  height: 55%;
+  clip-path: polygon(0 20%, 100% 40%, 100% 100%, 0 100%);
+  transform: skewY(5deg) translateX(3px);
 }
