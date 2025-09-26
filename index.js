@@ -13,6 +13,30 @@
   }
   await waitForST();
 
+  // 🔹 Bullet Fly Animation helper
+function animateBulletShot(bulletName, weakPointDesc) {
+  const el = document.createElement("div");
+  el.className = "dangan-bullet-fly";
+  el.textContent = bulletName;
+
+  let tx = 200, ty = -200;
+  const wpEl = weakPointDesc
+    ? document.querySelector(`.dangan-weak-highlight[data-wp="${weakPointDesc}"]`)
+    : null;
+
+  if (wpEl) {
+    const rect = wpEl.getBoundingClientRect();
+    tx = rect.left + rect.width / 2 - window.innerWidth / 2;
+    ty = rect.top + rect.height / 2 - window.innerHeight / 2;
+  }
+
+  el.style.setProperty("--target-x", `${tx}px`);
+  el.style.setProperty("--target-y", `${ty}px`);
+
+  document.body.appendChild(el);
+  el.addEventListener("animationend", () => el.remove());
+}
+
   // 🔹 Update Weak Point button style after AI verdict
   // Exposed globally for DevTools manual testing too
   window.updateWeakPointStatus = function (weakPoint, status) {
@@ -136,6 +160,36 @@
                      0 0 20px rgba(255, 255, 100, 0.8);
       }
       .dangan-weak-menu-floating { min-width: 180px; }
+
+      /* 🔹 Bullet Fly Animation CSS */
+@keyframes dangan-bullet-fly {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6) rotate(-10deg);
+    opacity: 0.2;
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1) rotate(5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--target-x, 200px), var(--target-y, -200px)) scale(1.2);
+    opacity: 0;
+  }
+}
+.dangan-bullet-fly {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 100000;
+  font-weight: 800;
+  color: #66aaff;
+  text-shadow: 0 0 8px #003366, 0 0 12px #66aaff;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: dangan-bullet-fly 1s ease-out forwards;
+}
+
+      
     `;
     document.head.appendChild(style);
   }
@@ -606,6 +660,9 @@
             }
 
             console.log("[Dangan Trial] Fired Truth Bullet detected:", name);
+
+            // 🔹 Trigger animation here
+            animateBulletShot(name, window.__dangan_last_target?.weakPoint || null);
 
             try {
               const md = SillyTavern.getContext().chatMetadata;
